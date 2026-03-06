@@ -1,0 +1,14 @@
+README.md
+
+# Python virtual environments
+.venv/
+.venv-1/
+
+# SQLite instance DB and instance folder
+instance/
+*.db
+
+# Byte-compiled / cache
+__pycache__/
+.pytest_cache/
+

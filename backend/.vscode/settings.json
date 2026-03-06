@@ -1,0 +1,8 @@
+{
+  "chat.tools.terminal.autoApprove": {
+    "/^/home/creeksonjoseph/softwarengineering/personal-projects/humanitarian-hackathon/backend/\\.venv-1/bin/python app\\.py$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  }
+}
