@@ -5,10 +5,25 @@ README.md
 .venv-1/
 
 # SQLite instance DB and instance folder
+# Ignore instance DB and runtime files, but keep the folder in repo if needed
 instance/
-*.db
+instance/*.db
+instance/*.log
+instance/*.sqlite
 
 # Byte-compiled / cache
 __pycache__/
 .pytest_cache/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Distribution / build
+dist/
+build/
+*.egg-info/
 

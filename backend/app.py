@@ -1,23 +1,12 @@
-from flask import Flask, request, make_response
+from flask import request, make_response
 
-# Import our DB helper and models from the `app` package
-from app import db
+# Use the app factory
+from app import create_app, db
 from app.models import EmergencyJob, Location, Rider, HazardReport
+from app.dispatch import notify_candidates
 
-# from sms_engine import broadcast_sos_to_riders  # placeholder for next step
+app = create_app()
 
-app = Flask(__name__)
-
-# Configure the local SQLite database for the hackathon MVP
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///okoaroute.db"
-
-# Bind our simple DB helper to the Flask app
-db.init_app(app)
-
-# Create the tables if they don't exist
-with app.app_context():
-    db.create_all()
-    # Note: In a real environment, you'd populate the Location table here.
 
 
 @app.route("/ussd", methods=["POST"])
@@ -78,11 +67,45 @@ def ussd_callback():
     # --- BRANCH 2 & 3 PLACEHOLDERS ---
     elif text == "2":
         response = "CON Enter 4-digit code of the hazardous route:"
-        # Logic to save HazardReport goes here
+        # Logic handled when user supplies the code below
 
     elif text == "3":
         response = "CON Enter your 4-digit Stage Code to check in:"
-        # Logic to update Rider's last_known_location_code goes here
+        # Logic handled when user supplies the code below
+
+    # --- USSD: hazard code entered (e.g., '2*4050') ---
+    elif len(text.split("*")) == 2 and text.startswith("2*"):
+        parts = text.split("*")
+        route_code = parts[1]
+        try:
+            # If phone belongs to a vetted rider mark ACTIVE, else UNVERIFIED
+            rider = db.session.get(Rider, phone_number)
+            status = "ACTIVE" if rider and rider.is_verified else "UNVERIFIED"
+            hr = HazardReport(route_description=route_code, reported_by_number=phone_number, status=status)
+            db.session.add(hr)
+            db.session.commit()
+            response = f"END Thank you. Hazard reported for route {route_code}."
+        except Exception:
+            db.session.rollback()
+            response = "END Error saving hazard report."
+
+    # --- USSD: rider check-in provided (e.g., '3*4050') ---
+    elif len(text.split("*")) == 2 and text.startswith("3*"):
+        parts = text.split("*")
+        stage_code = parts[1]
+        try:
+            rider = db.session.get(Rider, phone_number)
+            if rider:
+                rider.last_known_location_code = stage_code
+            else:
+                # create a minimal rider record
+                rider = Rider(phone_number=phone_number, name="", home_stage_code=stage_code, last_known_location_code=stage_code, is_verified=False, status="AVAILABLE")
+                db.session.add(rider)
+            db.session.commit()
+            response = f"END Check-in successful. Current stage: {stage_code}."
+        except Exception:
+            db.session.rollback()
+            response = "END Error processing check-in."
 
     else:
         response = "END Invalid input. Please try again."
