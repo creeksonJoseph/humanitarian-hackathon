@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from app import db
 
 
@@ -12,7 +12,7 @@ class EmergencyJob(db.Model):
     emergency_type = db.Column(db.String, nullable=False)
     status = db.Column(db.String, nullable=False, comment="BROADCASTING, CLAIMED, RESOLVED, CANCELLED")
     assigned_rider = db.Column(db.String, db.ForeignKey("riders.phone_number"), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     resolved_at = db.Column(db.DateTime, nullable=True, comment="Updated only if user/rider manually closes the job")
     cancellation_reason = db.Column(db.String, nullable=True)
 

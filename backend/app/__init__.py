@@ -4,6 +4,8 @@ from flask_migrate import Migrate
 import os
 from werkzeug.exceptions import HTTPException
 from flask import request, jsonify, current_app
+from marshmallow import ValidationError
+from sqlalchemy.exc import SQLAlchemyError
 
 from .errors import ApplicationError, format_error, http_exception_to_dict
 
@@ -83,6 +85,24 @@ def create_app(test_config=None):
 		if wants_json():
 			return jsonify(payload), 500
 		return ('Internal Server Error', 500)
+
+	# Marshmallow validation errors (schema load/dump)
+	@app.errorhandler(ValidationError)
+	def handle_validation_error(err):
+		current_app.logger.debug('Validation error: %s', getattr(err, 'messages', err))
+		payload = format_error('validation_error', 'Invalid input', status=400, details=getattr(err, 'messages', None) or {})
+		if wants_json():
+			return jsonify(payload), 400
+		return (str(err), 400)
+
+	# Database errors
+	@app.errorhandler(SQLAlchemyError)
+	def handle_db_error(err):
+		current_app.logger.exception('Database error')
+		payload = format_error('database_error', 'A database error occurred', status=500)
+		if wants_json():
+			return jsonify(payload), 500
+		return ('Database Error', 500)
 
 	return app
 

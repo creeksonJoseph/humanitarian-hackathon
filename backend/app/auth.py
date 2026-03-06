@@ -9,6 +9,6 @@ def require_api_key(func):
         expected = current_app.config.get("API_KEY")
         if expected and key == expected:
             return func(*args, **kwargs)
-        return jsonify({"error": "unauthorized"}), 401
+            raise ApplicationError(status_code=401, code="unauthorized", message="Invalid API key")
 
     return wrapper

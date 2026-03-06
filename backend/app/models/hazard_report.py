@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app import db
 
 
@@ -9,10 +9,10 @@ class HazardReport(db.Model):
     route_description = db.Column(db.String, nullable=False)
     reported_by_number = db.Column(db.String, nullable=False, comment="Can be anyone, not just a vetted rider")
     status = db.Column(db.String, nullable=False, comment="ACTIVE (if rider), UNVERIFIED (if public), CLEARED")
-    reported_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    reported_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     expires_at = db.Column(
-        db.DateTime,
-        default=lambda: datetime.utcnow() + timedelta(hours=12),
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc) + timedelta(hours=12),
         nullable=False,
         comment="reported_at + 12 hours",
     )
