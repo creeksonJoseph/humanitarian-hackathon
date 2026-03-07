@@ -157,14 +157,31 @@ def ussd_callback():
         try:
             rider = db.session.get(Rider, phone_number)
             if rider:
+                # Existing rider — update location
                 rider.last_known_location_code = stage_code
+                rider.status = "AVAILABLE"  # re-activate if they'd gone offline
                 db.session.commit()
-                response = f"END Check-in successful. Current stage: {stage_code}."
+                response = f"END Check-in successful. Stage: {stage_code}. You will receive SOS alerts."
             else:
-                response = "END Error. Number not recognized as a registered rider."
+                # Self-registration: anyone can volunteer during a disaster.
+                # Name defaults to their phone number — admin can update later.
+                new_rider = Rider(
+                    phone_number=phone_number,
+                    name=phone_number,          # placeholder name
+                    home_stage_code=stage_code,
+                    last_known_location_code=stage_code,
+                    is_verified=False,          # unverified until admin confirms
+                    status="AVAILABLE",
+                )
+                db.session.add(new_rider)
+                db.session.commit()
+                response = (
+                    f"END Registered & checked in at stage {stage_code}. "
+                    f"You will receive SOS rescue alerts. Thank you for volunteering."
+                )
         except Exception:
             db.session.rollback()
-            response = "END Error processing check-in."
+            response = "END Error processing check-in. Please try again."
 
     # --- BRANCH 4: CHECK ROUTE SAFETY ---
     elif text == "4":
