@@ -3,7 +3,7 @@ from app.models import Rider
 import os
 
 def test_smoke():
-    app = create_app({"TESTING": True, "API_KEY": "testkey"})
+    app = create_app({"TESTING": True, "API_KEY": "testkey", "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:"})
 
     with app.app_context():
         # Ensure tables exist

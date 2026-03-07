@@ -9,6 +9,20 @@ Run with gunicorn (production):
 All routes (/ussd, /sms, /health, /api/*) are registered inside
 `create_app()` via blueprints so they are available both here and in tests.
 """
+import os
+import logging
+from dotenv import load_dotenv
+
+# Show INFO-level logs from all app.* loggers in the console
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)-8s %(name)s  %(message)s",
+    datefmt="%H:%M:%S",
+)
+
+# Load config/.env so AT_API_KEY and other secrets are available to create_app()
+load_dotenv(os.path.join(os.path.dirname(__file__), "config", ".env"))
+
 from flask import request, make_response
 
 from app import create_app, db
@@ -16,6 +30,7 @@ from app.models import EmergencyJob, Rider, HazardReport
 from app.dispatch import notify_candidates
 
 app = create_app()
+logger = logging.getLogger("app.ussd")
 
 
 # ---------------------------------------------------------------------------
@@ -47,10 +62,28 @@ def ussd_callback():
 
     # --- BRANCH 1: REQUEST EMERGENCY ---
     elif text == "1":
-        response = "CON Select Emergency Type:\n"
-        response += "1. Maternity\n"
-        response += "2. Severe Injury\n"
-        response += "3. Other Medical"
+        # Check immediately if this caller already has an active job
+        active_job = EmergencyJob.query.filter(
+            EmergencyJob.caller_number == phone_number,
+            EmergencyJob.status.in_(["BROADCASTING", "ESCALATED", "CLAIMED"]),
+        ).order_by(EmergencyJob.created_at.desc()).first()
+
+        if active_job:
+            if active_job.status == "CLAIMED":
+                response = (
+                    f"END Rider already dispatched for Job {active_job.job_id}. "
+                    f"Please wait. If rider has not arrived, dial again and select 5."
+                )
+            else:
+                response = (
+                    f"END SOS Job {active_job.job_id} is active. "
+                    f"We are still searching for a rider. Please wait."
+                )
+        else:
+            response = "CON Select Emergency Type:\n"
+            response += "1. Maternity\n"
+            response += "2. Severe Injury\n"
+            response += "3. Other Medical"
 
     elif text in ["1*1", "1*2", "1*3"]:
         response = "CON Enter your 4-digit Village Code (e.g., 4050 for Ekerenyo):"
@@ -88,7 +121,17 @@ def ussd_callback():
                     )
                     db.session.add(new_job)
                     db.session.commit()
+                    logger.info(
+                        "[SOS CREATED] Job %s | type=%s village=%s caller=%s",
+                        new_job.job_id, selected_type, village_code, phone_number
+                    )
                     reached = notify_candidates(new_job)
+                    logger.info(
+                        "[SOS DISPATCHED] Job %s | sent to %d rider(s): %s",
+                        new_job.job_id,
+                        len(reached),
+                        ", ".join(r[0] for r in reached) if reached else "none"
+                    )
                     # Fix #3: tell caller honestly if no riders were notified
                     if reached:
                         response = (
@@ -96,6 +139,7 @@ def ussd_callback():
                             f"Notifying nearest riders. You will receive an SMS with details shortly."
                         )
                     else:
+                        logger.warning("[SOS NO RIDERS] Job %s — no AVAILABLE riders found", new_job.job_id)
                         response = (
                             f"END SOS logged [Job {new_job.job_id}]. "
                             f"No riders are nearby right now — we will keep searching and alert you."
@@ -204,12 +248,23 @@ def ussd_callback():
             if not active_hazards:
                 response = f"END Route {route_code}: No reported hazards. Route appears safe."
             else:
-                hazard_lines = []
-                for h in active_hazards:
-                    trust = "Verified" if h.status == "ACTIVE" else "Unverified report"
-                    hazard_lines.append(f"{trust}: {h.route_description}")
-                response = "END HAZARD ALERT for route {}:\n{}".format(
-                    route_code, "\n".join(hazard_lines)
+                verified = sum(1 for h in active_hazards if h.status == "ACTIVE")
+                unverified = len(active_hazards) - verified
+                # Show the most recently reported time
+                latest = max(active_hazards, key=lambda h: h.reported_at or h.expires_at)
+                reported_str = latest.reported_at.strftime("%d %b %H:%M") if latest.reported_at else "recently"
+
+                parts = []
+                if verified:
+                    parts.append(f"{verified} verified report{'s' if verified > 1 else ''}")
+                if unverified:
+                    parts.append(f"{unverified} unverified report{'s' if unverified > 1 else ''}")
+
+                response = (
+                    f"END ⚠️ HAZARD ALERT: Route {route_code}\n"
+                    f"{', '.join(parts)}.\n"
+                    f"Last reported: {reported_str}.\n"
+                    f"Use caution or find an alternative route."
                 )
 
     # --- BRANCH 5: REPORT RIDER NO-SHOW ---

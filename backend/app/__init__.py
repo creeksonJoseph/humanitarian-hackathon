@@ -65,11 +65,12 @@ def create_app(test_config=None):
 	# Seed Nyamira locations
 	@app.cli.command("seed-db")
 	def seed_db_command():
-		"""Insert seed locations for Nyamira County."""
-		from .seed import seed_locations
+		"""Insert seed locations and demo riders for Nyamira County."""
+		from .seed import seed_locations, seed_riders
 		with app.app_context():
-			count = seed_locations()
-			print(f"Seeded {count} new locations.")
+			loc_count = seed_locations()
+			rider_count = seed_riders()
+			print(f"Seeded {loc_count} new locations and {rider_count} new riders.")
 
 	# Background task runner (intended for cron)
 	import click

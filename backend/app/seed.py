@@ -47,3 +47,46 @@ def seed_locations() -> int:
     db.session.commit()
     logger.info("seed_locations: inserted %d locations", inserted)
     return inserted
+
+
+# Three verified demo riders spread across Nyamira stages
+RIDERS = [
+    {
+        "phone_number": "+254711000001",
+        "name": "Otieno Mwangi",
+        "home_stage_code": "1001",   # Nyamaiya Stage
+        "last_known_location_code": "1001",
+        "is_verified": True,
+        "status": "AVAILABLE",
+    },
+    {
+        "phone_number": "+254722000002",
+        "name": "Akinyi Moraa",
+        "home_stage_code": "1003",   # Nyamira Town Stage
+        "last_known_location_code": "1003",
+        "is_verified": True,
+        "status": "AVAILABLE",
+    },
+    {
+        "phone_number": "+254733000003",
+        "name": "Bosire Nyamweya",
+        "home_stage_code": "1005",   # Manga Stage
+        "last_known_location_code": "1005",
+        "is_verified": True,
+        "status": "AVAILABLE",
+    },
+]
+
+
+def seed_riders() -> int:
+    """Insert demo riders that don't already exist. Returns count inserted."""
+    from .models import Rider
+    inserted = 0
+    for data in RIDERS:
+        if not db.session.get(Rider, data["phone_number"]):
+            db.session.add(Rider(**data))
+            inserted += 1
+    db.session.commit()
+    logger.info("seed_riders: inserted %d riders", inserted)
+    return inserted
+

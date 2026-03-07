@@ -39,6 +39,38 @@ def health_check():
 
 
 # ---------------------------------------------------------------------------
+# SMS Delivery Report Webhook
+# ---------------------------------------------------------------------------
+
+@bp.route("/sms/delivery", methods=["POST"])
+def sms_delivery_report():
+    """Receive SMS delivery status callbacks from Africa's Talking.
+
+    Set this URL in AT dashboard → SMS → Delivery Reports callback.
+    AT retries every minute for up to 12 hours until it gets HTTP 200.
+    """
+    msg_id     = request.values.get("id", "unknown")
+    status     = request.values.get("status", "unknown")
+    phone      = request.values.get("phoneNumber", "unknown")
+    network    = request.values.get("networkCode", "unknown")
+    failure    = request.values.get("failureReason", "")
+
+    if status.lower() in ("success", "delivered"):
+        logger.info(
+            "[DELIVERY OK] msgId=%s to=%s network=%s",
+            msg_id, phone, network
+        )
+    else:
+        logger.warning(
+            "[DELIVERY FAILED] msgId=%s to=%s status=%s reason=%s network=%s",
+            msg_id, phone, status, failure, network
+        )
+
+    # Must return 200 — AT retries until it gets 200
+    return ("", 200)
+
+
+# ---------------------------------------------------------------------------
 # Inbound SMS Webhook
 # ---------------------------------------------------------------------------
 
