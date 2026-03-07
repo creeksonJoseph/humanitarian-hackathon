@@ -53,8 +53,8 @@ def ussd_callback():
             db.session.add(new_job)
             db.session.commit()
 
-            # TODO: Trigger the SMS broadcast out to the riders via sms_engine
-            # broadcast_sos_to_riders(new_job.job_id, village_code)
+            # THE FIX: Trigger the SMS broadcast engine to find local riders
+            notify_candidates(new_job.job_id, village_code)
 
             response = f"END SOS Sent. We are dispatching the nearest vetted rider to village {village_code}. You will receive an SMS shortly."
 
@@ -66,20 +66,23 @@ def ussd_callback():
     # --- BRANCH 2 & 3 PLACEHOLDERS ---
     elif text == "2":
         response = "CON Enter 4-digit code of the hazardous route:"
-        # Logic handled when user supplies the code below
 
     elif text == "3":
         response = "CON Enter your 4-digit Stage Code to check in:"
-        # Logic handled when user supplies the code below
 
     # --- USSD: hazard code entered (e.g., '2*4050') ---
     elif len(text.split("*")) == 2 and text.startswith("2*"):
         parts = text.split("*")
         route_code = parts[1]
         try:
-            # If phone belongs to a vetted rider mark ACTIVE, else UNVERIFIED
             rider = db.session.get(Rider, phone_number)
-            status = "ACTIVE" if rider and rider.is_verified else "UNVERIFIED"
+            if rider:
+                status = "ACTIVE" if rider.is_verified else "UNVERIFIED"
+                # THE FIX: Inferred location update. Rider is physically at the hazard.
+                rider.last_known_location_code = route_code
+            else:
+                status = "UNVERIFIED"
+                
             hr = HazardReport(route_description=route_code, reported_by_number=phone_number, status=status)
             db.session.add(hr)
             db.session.commit()
@@ -96,12 +99,11 @@ def ussd_callback():
             rider = db.session.get(Rider, phone_number)
             if rider:
                 rider.last_known_location_code = stage_code
+                db.session.commit()
+                response = f"END Check-in successful. Current stage: {stage_code}."
             else:
-                # create a minimal rider record
-                rider = Rider(phone_number=phone_number, name="", home_stage_code=stage_code, last_known_location_code=stage_code, is_verified=False, status="AVAILABLE")
-                db.session.add(rider)
-            db.session.commit()
-            response = f"END Check-in successful. Current stage: {stage_code}."
+                # THE FIX: Reject unregistered numbers. Do not poison the database with fake riders.
+                response = "END Error. Number not recognized as a registered rider."
         except Exception:
             db.session.rollback()
             response = "END Error processing check-in."
