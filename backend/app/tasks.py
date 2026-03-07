@@ -25,9 +25,11 @@ logger = logging.getLogger("app.tasks")
 def escalate_unanswered_jobs() -> int:
     """Re-broadcast BROADCASTING jobs that have had no rider accept for 3+ minutes.
 
-    The initial dispatch only contacts local riders. If none accept within 3 minutes,
-    this function fires a surge broadcast to ALL available riders with a bonus message,
-    and sends the caller a status update so they know the search is expanding.
+    Fix #2: after escalating, sets status to ESCALATED so this function won't
+    re-process the same job on the next cron run — preventing broadcast spam.
+
+    Fix #5: if the surge blast also finds zero riders, sends the caller a final
+    "no riders available" SMS so they aren't left waiting in silence.
 
     Run via cron every 3 minutes:
         */3 * * * * flask run-tasks escalate
@@ -36,6 +38,7 @@ def escalate_unanswered_jobs() -> int:
     from .sms import send_sms
 
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=3)
+    # Only escalate pure BROADCASTING jobs (not already ESCALATED, CLAIMED, etc.)
     unanswered = EmergencyJob.query.filter(
         EmergencyJob.status == "BROADCASTING",
         EmergencyJob.created_at < cutoff,
@@ -46,15 +49,33 @@ def escalate_unanswered_jobs() -> int:
         # Notify the caller that we're expanding the search
         send_sms(
             job.caller_number,
-            f"OkoaRoute [Job {job.job_id}]: No rider available nearby yet. "
-            f"Expanding search to riders from surrounding areas. Please stand by."
+            f"OkoaRoute [Job {job.job_id}]: No rider nearby yet. "
+            f"Expanding search to surrounding areas. Please stand by."
         )
-        # Surge broadcast to ALL available riders
-        notify_candidates(job, surge=True)
+
+        # Surge blast to riders outside the local area (local already got wave 1)
+        reached = notify_candidates(job, surge=True)
+
+        if not reached:
+            # Fix #5: no riders at all — don't leave caller hanging
+            send_sms(
+                job.caller_number,
+                f"OkoaRoute [Job {job.job_id}]: We could not find an available rider "
+                f"at this time. Please call your nearest health facility directly or "
+                f"try again shortly."
+            )
+            job.status = "CANCELLED"
+            job.cancellation_reason = "NO_RIDERS_AVAILABLE"
+        else:
+            # Fix #2: mark as escalated so cron won't re-broadcast
+            job.status = "ESCALATED"
+
+        db.session.commit()
         count += 1
-        logger.info("Escalated job %s to surge broadcast", job.job_id)
+        logger.info("Escalated job %s (reached %d riders)", job.job_id, len(reached))
 
     return count
+
 
 
 def auto_resolve_stale_jobs() -> int:

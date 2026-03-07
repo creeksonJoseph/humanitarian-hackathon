@@ -12,6 +12,9 @@ logger = logging.getLogger("app.webhooks")
 
 bp = Blueprint("webhooks", __name__)
 
+# Jobs in these statuses can still be claimed by a rider
+CLAIMABLE_STATUSES = {"BROADCASTING", "ESCALATED"}
+
 
 # ---------------------------------------------------------------------------
 # Health check
@@ -44,19 +47,18 @@ def sms_callback():
     """Handle inbound SMS from Africa's Talking.
 
     Supported commands (case-insensitive):
-        YES              – claim the most recent BROADCASTING job (simple, natural)
-        ACCEPT <job_id>  – claim a specific job by ID (fallback, useful when rider
-                           received multiple broadcasts)
-        DROP <job_id>    – surrender a job so it re-broadcasts
+        YES              – claim the most recent claimable job
+        ACCEPT <job_id>  – claim a specific job by ID
+        DROP <job_id>    – surrender a claimed job so it re-broadcasts
     """
     from_number = request.values.get("from", "").strip()
     text = request.values.get("text", "").strip().upper()
 
-    # Simple "YES" reply – find the most recent BROADCASTING job
     if text == "YES":
+        # Fix #2: accept jobs in BROADCASTING or ESCALATED state
         job = (
             EmergencyJob.query
-            .filter_by(status="BROADCASTING")
+            .filter(EmergencyJob.status.in_(CLAIMABLE_STATUSES))
             .order_by(EmergencyJob.created_at.desc())
             .first()
         )
@@ -66,17 +68,14 @@ def sms_callback():
             from .sms import send_sms
             send_sms(from_number, "OkoaRoute: No active emergencies right now. Thank you for being ready.")
 
-    # Specific "ACCEPT <id>" – for riders who received multiple broadcasts
     elif re.match(r"^ACCEPT\s+(\d+)$", text):
         job_id = int(re.match(r"^ACCEPT\s+(\d+)$", text).group(1))
         _handle_accept(from_number, job_id)
 
-    # Drop a job
     elif re.match(r"^DROP\s+(\d+)$", text):
         job_id = int(re.match(r"^DROP\s+(\d+)$", text).group(1))
         _handle_drop(from_number, job_id)
 
-    # Africa's Talking ignores the response body – always return 200
     return ("", 200)
 
 
@@ -90,13 +89,23 @@ def _handle_accept(rider_phone: str, job_id: int):
         send_sms(rider_phone, f"OkoaRoute: Job {job_id} not found.")
         return
 
-    if job.status != "BROADCASTING":
+    # Fix #2: accept BROADCASTING or ESCALATED jobs
+    if job.status not in CLAIMABLE_STATUSES:
         send_sms(rider_phone, f"OkoaRoute: Job {job_id} already claimed. Thank you for responding.")
         return
 
     rider = db.session.get(Rider, rider_phone)
     if not rider:
         send_sms(rider_phone, "OkoaRoute: Your number is not registered as a rider. Contact admin.")
+        return
+
+    # Fix #1: block ON_JOB riders from claiming a second job
+    if rider.status != "AVAILABLE":
+        send_sms(
+            rider_phone,
+            f"OkoaRoute: You are currently {rider.status.lower().replace('_', ' ')}. "
+            f"Complete your current job before accepting a new rescue."
+        )
         return
 
     # Concurrency lock – first writer wins
@@ -110,7 +119,6 @@ def _handle_accept(rider_phone: str, job_id: int):
         send_sms(rider_phone, f"OkoaRoute: Job {job_id} was just taken. Better luck next time.")
         return
 
-    # Send full contact details to both parties
     send_handshake(job)
     logger.info("Job %s claimed by %s", job_id, rider_phone)
 
