@@ -57,7 +57,7 @@ def test_smoke():
     with open(os.path.join(app.instance_path, "sms.log"), "r") as f:
         sms_content = f.read()
         print(sms_content)
-        assert "URGENT SOS" in sms_content
+        assert "OkoaRoute SOS" in sms_content
 
     if job_id:
         print("--- POST /api/jobs/{}/claim ---".format(job_id))

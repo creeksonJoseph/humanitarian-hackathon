@@ -1,5 +1,6 @@
 from functools import wraps
-from flask import request, current_app, jsonify
+from flask import request, current_app
+from .errors import ApplicationError
 
 
 def require_api_key(func):
@@ -9,6 +10,6 @@ def require_api_key(func):
         expected = current_app.config.get("API_KEY")
         if expected and key == expected:
             return func(*args, **kwargs)
-            raise ApplicationError(status_code=401, code="unauthorized", message="Invalid API key")
+        raise ApplicationError(status_code=401, code="unauthorized", message="Invalid API key")
 
     return wrapper

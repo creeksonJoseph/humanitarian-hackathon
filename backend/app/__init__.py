@@ -30,6 +30,11 @@ def create_app(test_config=None):
 		SECRET_KEY="dev",
 		SQLALCHEMY_DATABASE_URI=f"sqlite:///{db_path}",
 		SQLALCHEMY_TRACK_MODIFICATIONS=False,
+		# Africa's Talking credentials – set AT_API_KEY to switch from stub to real
+		AT_USERNAME=os.getenv("AFRICAS_TALKING_USERNAME", "sandbox"),
+		AT_API_KEY=os.getenv("AFRICAS_TALKING_API_KEY", ""),
+		# Internal API key for protected endpoints
+		API_KEY=os.getenv("API_KEY", "dev-api-key"),
 	)
 
 	if test_config is not None:
@@ -41,6 +46,14 @@ def create_app(test_config=None):
 	# Initialize Flask-Migrate (Alembic integration)
 	Migrate(app, db)
 
+	# CORS – allows the frontend dashboard to call /api/* endpoints
+	try:
+		from flask_cors import CORS  # type: ignore[import]
+		origins = os.getenv("CORS_ORIGINS", "*").split(",")
+		CORS(app, resources={r"/api/*": {"origins": origins}})
+	except ImportError:
+		app.logger.warning("flask-cors not installed; CORS headers will not be sent")
+
 	# Add a CLI helper to create the database tables in a controlled way
 	@app.cli.command("init-db")
 	def init_db_command():
@@ -49,9 +62,40 @@ def create_app(test_config=None):
 			db.create_all()
 			print("Initialized the database.")
 
+	# Seed Nyamira locations
+	@app.cli.command("seed-db")
+	def seed_db_command():
+		"""Insert seed locations for Nyamira County."""
+		from .seed import seed_locations
+		with app.app_context():
+			count = seed_locations()
+			print(f"Seeded {count} new locations.")
+
+	# Background task runner (intended for cron)
+	import click
+
+	@app.cli.command("run-tasks")
+	@click.argument("task", type=click.Choice(["stale-jobs", "reset-locations", "expire-hazards", "all"]))
+	def run_tasks_command(task):
+		"""Run a maintenance background task."""
+		from .tasks import auto_resolve_stale_jobs, reset_rider_locations, expire_old_hazards
+		with app.app_context():
+			if task in ("stale-jobs", "all"):
+				n = auto_resolve_stale_jobs()
+				print(f"auto_resolve_stale_jobs: {n} jobs resolved")
+			if task in ("reset-locations", "all"):
+				n = reset_rider_locations()
+				print(f"reset_rider_locations: {n} riders reset")
+			if task in ("expire-hazards", "all"):
+				n = expire_old_hazards()
+				print(f"expire_old_hazards: {n} hazards expired")
+
 	# Register blueprints (api will be added later)
 	from . import api  # noqa: E402,F401
 	app.register_blueprint(api.bp)
+
+	from . import webhooks  # noqa: E402,F401
+	app.register_blueprint(webhooks.bp)
 
 	# Centralized error handlers that produce JSON for API requests.
 	# We scope JSON responses to requests that accept JSON or to API paths.
