@@ -75,10 +75,10 @@ def create_app(test_config=None):
 	import click
 
 	@app.cli.command("run-tasks")
-	@click.argument("task", type=click.Choice(["stale-jobs", "reset-locations", "expire-hazards", "all"]))
+	@click.argument("task", type=click.Choice(["stale-jobs", "reset-locations", "expire-hazards", "escalate", "all"]))
 	def run_tasks_command(task):
 		"""Run a maintenance background task."""
-		from .tasks import auto_resolve_stale_jobs, reset_rider_locations, expire_old_hazards
+		from .tasks import auto_resolve_stale_jobs, reset_rider_locations, expire_old_hazards, escalate_unanswered_jobs
 		with app.app_context():
 			if task in ("stale-jobs", "all"):
 				n = auto_resolve_stale_jobs()
@@ -89,6 +89,9 @@ def create_app(test_config=None):
 			if task in ("expire-hazards", "all"):
 				n = expire_old_hazards()
 				print(f"expire_old_hazards: {n} hazards expired")
+			if task in ("escalate", "all"):
+				n = escalate_unanswered_jobs()
+				print(f"escalate_unanswered_jobs: {n} jobs escalated")
 
 	# Register blueprints (api will be added later)
 	from . import api  # noqa: E402,F401

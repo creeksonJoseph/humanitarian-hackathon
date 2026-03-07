@@ -22,6 +22,41 @@ from .models import EmergencyJob, HazardReport, Rider
 logger = logging.getLogger("app.tasks")
 
 
+def escalate_unanswered_jobs() -> int:
+    """Re-broadcast BROADCASTING jobs that have had no rider accept for 3+ minutes.
+
+    The initial dispatch only contacts local riders. If none accept within 3 minutes,
+    this function fires a surge broadcast to ALL available riders with a bonus message,
+    and sends the caller a status update so they know the search is expanding.
+
+    Run via cron every 3 minutes:
+        */3 * * * * flask run-tasks escalate
+    """
+    from .dispatch import notify_candidates
+    from .sms import send_sms
+
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=3)
+    unanswered = EmergencyJob.query.filter(
+        EmergencyJob.status == "BROADCASTING",
+        EmergencyJob.created_at < cutoff,
+    ).all()
+
+    count = 0
+    for job in unanswered:
+        # Notify the caller that we're expanding the search
+        send_sms(
+            job.caller_number,
+            f"OkoaRoute [Job {job.job_id}]: No rider available nearby yet. "
+            f"Expanding search to riders from surrounding areas. Please stand by."
+        )
+        # Surge broadcast to ALL available riders
+        notify_candidates(job, surge=True)
+        count += 1
+        logger.info("Escalated job %s to surge broadcast", job.job_id)
+
+    return count
+
+
 def auto_resolve_stale_jobs() -> int:
     """Auto-resolve CLAIMED jobs older than 3 hours.
 

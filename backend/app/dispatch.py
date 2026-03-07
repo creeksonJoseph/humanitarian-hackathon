@@ -8,6 +8,9 @@ from . import db
 
 logger = logging.getLogger("app.dispatch")
 
+# How many local riders to blast in the first wave
+LOCAL_BLAST_LIMIT = 5
+
 
 def _get_active_hazard_note() -> str:
     """Return a short warning string if there are active hazards, else empty string."""
@@ -18,48 +21,79 @@ def _get_active_hazard_note() -> str:
     ).all()
     if not hazards:
         return ""
-    # Summarise: show first two at most so SMS stays short
     descriptions = [h.route_description for h in hazards[:2]]
     label = "HAZARD WARNING" if any(h.status == "ACTIVE" for h in hazards[:2]) else "UNVERIFIED REPORT"
     return f" ⚠️ {label}: {', '.join(descriptions)} may be impassable."
 
 
-def notify_candidates(job: EmergencyJob) -> list:
-    """Find available riders and blast the SOS broadcast SMS.
+def _build_sos_message(job: EmergencyJob, hazard_note: str, surge: bool = False) -> str:
+    prefix = "🚨 URGENT SOS" if surge else "OkoaRoute SOS"
+    return (
+        f"{prefix} [Job {job.job_id}]: "
+        f"{job.emergency_type} emergency at village {job.village_code}."
+        f"{hazard_note} "
+        f"Reply YES to accept this rescue and get full contact details."
+    )
 
-    The broadcast message:
-    - Tells the rider what type of emergency it is and where
-    - Includes any active hazard warning so they know about route risks upfront
-    - Tells them to reply YES to claim the job (simple, natural language)
+
+def notify_candidates(job: EmergencyJob, surge: bool = False) -> list:
+    """Broadcast SOS to riders using a proximity-first strategy.
+
+    Wave 1 (initial dispatch):
+        Query riders whose last_known_location_code matches the job's village_code.
+        If fewer than LOCAL_BLAST_LIMIT are found, fill up to the limit from
+        riders at any location (ordered by availability).
+        This ensures local riders are always preferred.
+
+    Wave 2 (escalation — called by escalate_unanswered_jobs task after 3 min):
+        surge=True → blast ALL remaining AVAILABLE riders with a surge bonus message.
     """
-    candidates = Rider.query.filter_by(status="AVAILABLE").all()
-    if not candidates:
-        logger.warning("notify_candidates: no available riders for job %s", job.job_id)
-        return []
-
     hazard_note = _get_active_hazard_note()
+    msg = _build_sos_message(job, hazard_note, surge=surge)
+
+    if surge:
+        # Escalation: blast everyone who hasn't already been notified
+        # (job is still BROADCASTING, so assigned_rider is None)
+        candidates = Rider.query.filter_by(status="AVAILABLE").all()
+    else:
+        # Wave 1: local riders first
+        local_riders = (
+            Rider.query
+            .filter_by(status="AVAILABLE", last_known_location_code=job.village_code)
+            .limit(LOCAL_BLAST_LIMIT)
+            .all()
+        )
+        if len(local_riders) < LOCAL_BLAST_LIMIT:
+            # Not enough local — top up from anywhere
+            local_phones = [r.phone_number for r in local_riders]
+            extras = (
+                Rider.query
+                .filter(
+                    Rider.status == "AVAILABLE",
+                    Rider.phone_number.notin_(local_phones),
+                )
+                .limit(LOCAL_BLAST_LIMIT - len(local_riders))
+                .all()
+            )
+            candidates = local_riders + extras
+        else:
+            candidates = local_riders
+
+    if not candidates:
+        logger.warning("notify_candidates: no available riders for job %s (surge=%s)", job.job_id, surge)
+        return []
 
     messages = []
     for rider in candidates:
-        msg = (
-            f"OkoaRoute SOS [Job {job.job_id}]: "
-            f"{job.emergency_type} emergency at village {job.village_code}."
-            f"{hazard_note} "
-            f"Reply YES to accept this rescue and get full contact details."
-        )
         send_sms(rider.phone_number, msg)
         messages.append((rider.phone_number, msg))
-        logger.info("SOS broadcast sent to %s for job %s", rider.phone_number, job.job_id)
+        logger.info("SOS broadcast sent to %s for job %s (surge=%s)", rider.phone_number, job.job_id, surge)
 
     return messages
 
 
 def send_handshake(job: EmergencyJob) -> bool:
-    """Exchange phone numbers + rider name between caller and assigned rider.
-
-    - Caller gets: rider name + phone number (so they know who's coming)
-    - Rider gets: caller's number + any active hazard/route warning
-    """
+    """Exchange phone numbers + rider name between caller and assigned rider."""
     if not job.assigned_rider or not job.caller_number:
         logger.error("send_handshake: job %s missing rider or caller", job.job_id)
         return False

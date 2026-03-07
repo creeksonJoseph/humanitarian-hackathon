@@ -54,19 +54,31 @@ def ussd_callback():
         selected_type = emergency_type_map.get(parts[1], "OTHER")
         village_code = parts[2]
         try:
-            new_job = EmergencyJob(
-                caller_number=phone_number,
-                village_code=village_code,
-                emergency_type=selected_type,
-                status="BROADCASTING",
-            )
-            db.session.add(new_job)
-            db.session.commit()
-            notify_candidates(new_job)
-            response = f"END SOS Sent. Dispatching nearest vetted rider to village {village_code}. You will receive an SMS shortly."
+            # Duplicate SOS guard: don't let same caller open two active jobs
+            existing = EmergencyJob.query.filter(
+                EmergencyJob.caller_number == phone_number,
+                EmergencyJob.status.in_(["BROADCASTING", "CLAIMED"]),
+            ).first()
+            if existing:
+                response = (
+                    f"END Your SOS [Job {existing.job_id}] is already active "
+                    f"and a rider has been notified. Please wait."
+                )
+            else:
+                new_job = EmergencyJob(
+                    caller_number=phone_number,
+                    village_code=village_code,
+                    emergency_type=selected_type,
+                    status="BROADCASTING",
+                )
+                db.session.add(new_job)
+                db.session.commit()
+                notify_candidates(new_job)
+                response = f"END SOS Sent. Dispatching nearest vetted rider to village {village_code}. You will receive an SMS shortly."
         except Exception:
             db.session.rollback()
             response = "END Error processing request. Please ensure the village code is correct."
+
 
     # --- BRANCH 2: REPORT HAZARD ---
     elif text == "2":
@@ -80,13 +92,35 @@ def ussd_callback():
             status = "ACTIVE" if (rider and rider.is_verified) else "UNVERIFIED"
             if rider:
                 rider.last_known_location_code = route_code
+
             hr = HazardReport(route_description=route_code, reported_by_number=phone_number, status=status)
             db.session.add(hr)
             db.session.commit()
+
+            # Corroboration rule: if a second DIFFERENT number reports the same
+            # route as UNVERIFIED, upgrade all UNVERIFIED reports on that route to ACTIVE.
+            if status == "UNVERIFIED":
+                from datetime import datetime, timezone
+                now = datetime.now(timezone.utc)
+                existing = HazardReport.query.filter(
+                    HazardReport.route_description == route_code,
+                    HazardReport.status == "UNVERIFIED",
+                    HazardReport.reported_by_number != phone_number,
+                    HazardReport.expires_at > now,
+                ).first()
+                if existing:
+                    # Two independent strangers agree → mark all UNVERIFIED on this route as ACTIVE
+                    HazardReport.query.filter(
+                        HazardReport.route_description == route_code,
+                        HazardReport.status == "UNVERIFIED",
+                    ).update({"status": "ACTIVE"})
+                    db.session.commit()
+
             response = f"END Thank you. Hazard reported for route {route_code}."
         except Exception:
             db.session.rollback()
             response = "END Error saving hazard report."
+
 
     # --- BRANCH 3: RIDER CHECK-IN ---
     elif text == "3":
