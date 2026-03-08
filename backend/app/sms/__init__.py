@@ -17,16 +17,18 @@ def send_sms(number: str, message: str) -> bool:
     # Import here to avoid a circular import at module load time
     try:
         from flask import current_app
-        api_key = current_app.config.get("AT_API_KEY", "")
+        api_key  = current_app.config.get("AT_API_KEY", "")
         username = current_app.config.get("AT_USERNAME", "sandbox")
+        sender   = current_app.config.get("AT_SENDER_ID", "") or None
     except RuntimeError:
         # Outside application context (unit tests without app) – use stub
-        api_key = ""
+        api_key  = ""
         username = "sandbox"
+        sender   = None
 
     if api_key:
         from .at_client import send_sms as _at_send
-        return _at_send(number, message, username=username, api_key=api_key)
+        return _at_send(number, message, username=username, api_key=api_key, sender_id=sender)
 
     from .stub import send_sms as _stub_send
     return _stub_send(number, message)

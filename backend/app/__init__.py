@@ -33,6 +33,7 @@ def create_app(test_config=None):
 		# Africa's Talking credentials – set AT_API_KEY to switch from stub to real
 		AT_USERNAME=os.getenv("AFRICAS_TALKING_USERNAME", "sandbox"),
 		AT_API_KEY=os.getenv("AFRICAS_TALKING_API_KEY", ""),
+		AT_SENDER_ID=os.getenv("AT_SENDER_ID", ""),  # shortcode e.g. 28899
 		# Internal API key for protected endpoints
 		API_KEY=os.getenv("API_KEY", "dev-api-key"),
 	)
