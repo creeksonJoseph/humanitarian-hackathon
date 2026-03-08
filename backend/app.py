@@ -52,13 +52,13 @@ def ussd_callback():
         response += "2. Report Road Hazard\n"
         response += "3. Rider Check-in\n"
         response += "4. Check Route Safety"
-        # Only show option 5 if this caller has an active CLAIMED job
-        has_claimed_job = EmergencyJob.query.filter(
+        # Show option 5 if this caller has ANY active job (searching or rider assigned)
+        has_active_job = EmergencyJob.query.filter(
             EmergencyJob.caller_number == phone_number,
-            EmergencyJob.status == "CLAIMED",
+            EmergencyJob.status.in_(["BROADCASTING", "ESCALATED", "CLAIMED"]),
         ).first()
-        if has_claimed_job:
-            response += "\n5. Report Rider No-Show"
+        if has_active_job:
+            response += "\n5. Report Rider No-Show / Re-send SOS"
 
     # --- BRANCH 1: REQUEST EMERGENCY ---
     elif text == "1":
@@ -144,8 +144,9 @@ def ussd_callback():
                             f"END SOS logged [Job {new_job.job_id}]. "
                             f"No riders are nearby right now — we will keep searching and alert you."
                         )
-        except Exception:
+        except Exception as exc:
             db.session.rollback()
+            logger.exception("[SOS ERROR] caller=%s village=%s error=%s", phone_number, village_code if 'village_code' in dir() else '?', exc)
             response = "END Error processing request. Please try again."
 
 
@@ -267,44 +268,52 @@ def ussd_callback():
                     f"Use caution or find an alternative route."
                 )
 
-    # --- BRANCH 5: REPORT RIDER NO-SHOW ---
+    # --- BRANCH 5: REPORT NO-SHOW / RE-SEND SOS ---
     elif text == "5":
-        # Look up the caller's most recent CLAIMED job by their phone number
         job = EmergencyJob.query.filter(
             EmergencyJob.caller_number == phone_number,
-            EmergencyJob.status == "CLAIMED",
+            EmergencyJob.status.in_(["BROADCASTING", "ESCALATED", "CLAIMED"]),
         ).order_by(EmergencyJob.created_at.desc()).first()
 
         if not job:
-            response = "END No active claimed job found for your number. If you still need help, select option 1."
+            response = "END No active job found for your number. Select option 1 to call for help."
         else:
             try:
-                ghost_rider_phone = job.assigned_rider
-
-                # Release the job for re-dispatch
-                job.assigned_rider = None
-                job.status = "BROADCASTING"
-                job.cancellation_reason = "RIDER_NO_SHOW"
-
-                # Free the rider back to AVAILABLE — they may just be stuck in mud.
-                # It's on them not to accept another job they can't fulfil.
-                if ghost_rider_phone:
-                    ghost_rider = db.session.get(Rider, ghost_rider_phone)
-                    if ghost_rider:
-                        ghost_rider.status = "AVAILABLE"
-
-                db.session.commit()
-
-                # Re-broadcast to all remaining available riders
-                notify_candidates(job)
-
-                response = (
-                    f"END Noted. Finding you a new rider for Job {job.job_id}. "
-                    f"You will receive an SMS shortly. The previous rider has been flagged."
-                )
-            except Exception:
+                if job.status == "CLAIMED":
+                    # Rider assigned but hasn't arrived — free them and re-broadcast
+                    ghost_rider_phone = job.assigned_rider
+                    job.assigned_rider = None
+                    job.status = "BROADCASTING"
+                    job.cancellation_reason = "RIDER_NO_SHOW"
+                    if ghost_rider_phone:
+                        ghost_rider = db.session.get(Rider, ghost_rider_phone)
+                        if ghost_rider:
+                            ghost_rider.status = "AVAILABLE"
+                    db.session.commit()
+                    notify_candidates(job)
+                    response = (
+                        f"END Noted. Finding you a new rider for Job {job.job_id}. "
+                        f"You will receive an SMS shortly."
+                    )
+                else:
+                    # Still searching — force immediate surge to all available riders
+                    job.status = "BROADCASTING"
+                    db.session.commit()
+                    reached = notify_candidates(job, surge=True)
+                    if reached:
+                        response = (
+                            f"END Re-sending SOS Job {job.job_id} to all available riders. "
+                            f"You will receive an SMS when someone accepts."
+                        )
+                    else:
+                        response = (
+                            f"END No riders available right now for Job {job.job_id}. "
+                            f"Please also try calling your nearest health centre."
+                        )
+            except Exception as exc:
                 db.session.rollback()
-                response = "END Error processing your report. Please try again."
+                logger.exception("[OPTION 5 ERROR] caller=%s error=%s", phone_number, exc)
+                response = "END Error processing. Please try again."
 
     else:
         response = "END Invalid input. Please try again."

@@ -21,7 +21,7 @@ def send_sms(number: str, message: str, *, username: str, api_key: str) -> bool:
     africastalking.initialize(username, api_key)
     sms = africastalking.SMS
     try:
-        response = sms.send(message, [number], enqueue=True)
+        response = sms.send(message, [number])
         logger.info("AT SMS sent to %s: %s", number, response)
         return True
     except Exception:
