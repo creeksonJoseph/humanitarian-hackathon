@@ -49,7 +49,7 @@ def escalate_unanswered_jobs() -> int:
         # Notify the caller that we're expanding the search
         send_sms(
             job.caller_number,
-            f"OkoaRoute [Job {job.job_id}]: No rider nearby yet. "
+            f"OkoaRoute: No rider nearby yet. "
             f"Expanding search to surrounding areas. Please stand by."
         )
 
@@ -60,7 +60,7 @@ def escalate_unanswered_jobs() -> int:
             # Fix #5: no riders at all — don't leave caller hanging
             send_sms(
                 job.caller_number,
-                f"OkoaRoute [Job {job.job_id}]: We could not find an available rider "
+                f"OkoaRoute: We could not find an available rider "
                 f"at this time. Please call your nearest health facility directly or "
                 f"try again shortly."
             )

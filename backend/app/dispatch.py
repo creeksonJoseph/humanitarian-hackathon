@@ -29,7 +29,7 @@ def _get_active_hazard_note() -> str:
 def _build_sos_message(job: EmergencyJob, hazard_note: str, surge: bool = False) -> str:
     prefix = "🚨 URGENT SOS" if surge else "OkoaRoute SOS"
     return (
-        f"{prefix} [Job {job.job_id}]: "
+        f"{prefix}: "
         f"{job.emergency_type} emergency at village {job.village_code}."
         f"{hazard_note} "
         f"Reply YES to accept this rescue and get full contact details."
@@ -111,11 +111,11 @@ def send_handshake(job: EmergencyJob) -> bool:
     hazard_note = _get_active_hazard_note()
 
     msg_to_caller = (
-        f"OkoaRoute [Job {job.job_id}]: {rider_name} is on the way to you. "
+        f"OkoaRoute: {rider_name} is on the way to you. "
         f"Call them at {rider_number} to give your exact location."
     )
     msg_to_rider = (
-        f"OkoaRoute [Job {job.job_id}] CONFIRMED. "
+        f"OkoaRoute CONFIRMED. "
         f"Call the patient/proxy at {caller_number} for the exact location."
         f"{hazard_note}"
     )

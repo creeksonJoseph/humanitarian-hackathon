@@ -86,6 +86,11 @@ def sms_callback():
     from_number = request.values.get("from", "").strip()
     text = request.values.get("text", "").strip().upper()
 
+    logger.info(
+        "[INBOUND SMS] from=%s text='%s' (Full Payload: %s)",
+        from_number, text, dict(request.values)
+    )
+
     if text == "YES":
         # Fix #2: accept jobs in BROADCASTING or ESCALATED state
         job = (
@@ -118,12 +123,12 @@ def _handle_accept(rider_phone: str, job_id: int):
 
     job = db.session.get(EmergencyJob, job_id)
     if not job:
-        send_sms(rider_phone, f"OkoaRoute: Job {job_id} not found.")
+        send_sms(rider_phone, "OkoaRoute: Job not found or has already been resolved.")
         return
 
     # Fix #2: accept BROADCASTING or ESCALATED jobs
     if job.status not in CLAIMABLE_STATUSES:
-        send_sms(rider_phone, f"OkoaRoute: Job {job_id} already claimed. Thank you for responding.")
+        send_sms(rider_phone, "OkoaRoute: This rescue has already been claimed by another rider. Thank you for responding.")
         return
 
     rider = db.session.get(Rider, rider_phone)
@@ -148,7 +153,7 @@ def _handle_accept(rider_phone: str, job_id: int):
         db.session.commit()
     except Exception:
         db.session.rollback()
-        send_sms(rider_phone, f"OkoaRoute: Job {job_id} was just taken. Better luck next time.")
+        send_sms(rider_phone, "OkoaRoute: This rescue was just taken by another rider. Better luck next time.")
         return
 
     send_handshake(job)
@@ -176,5 +181,5 @@ def _handle_drop(rider_phone: str, job_id: int):
         return
 
     notify_candidates(job)
-    send_sms(rider_phone, f"OkoaRoute: Job {job_id} released. Another rider will be dispatched.")
+    send_sms(rider_phone, "OkoaRoute: You have dropped this rescue. Another rider will be dispatched.")
     logger.info("Job %s dropped by %s and re-broadcast", job_id, rider_phone)
