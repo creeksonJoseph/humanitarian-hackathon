@@ -71,13 +71,13 @@ def ussd_callback():
         if active_job:
             if active_job.status == "CLAIMED":
                 response = (
-                    f"END Rider already dispatched for Job {active_job.job_id}. "
-                    f"Please wait. If rider has not arrived, dial again and select 5."
+                    "END A rider has already been dispatched to you. "
+                    "Please wait. If the rider has not arrived, dial again and select 5."
                 )
             else:
                 response = (
-                    f"END SOS Job {active_job.job_id} is active. "
-                    f"We are still searching for a rider. Please wait."
+                    "END Your SOS is active and we are still searching for a rider. "
+                    "Please wait."
                 )
         else:
             response = "CON Select Emergency Type:\n"
@@ -135,14 +135,14 @@ def ussd_callback():
                     # Fix #3: tell caller honestly if no riders were notified
                     if reached:
                         response = (
-                            f"END SOS logged [Job {new_job.job_id}]. "
-                            f"Notifying nearest riders. You will receive an SMS with details shortly."
+                            "END SOS sent. Nearest riders have been notified. "
+                            "You will receive an SMS with details shortly."
                         )
                     else:
                         logger.warning("[SOS NO RIDERS] Job %s — no AVAILABLE riders found", new_job.job_id)
                         response = (
-                            f"END SOS logged [Job {new_job.job_id}]. "
-                            f"No riders are nearby right now — we will keep searching and alert you."
+                            "END SOS sent. No riders are nearby right now — "
+                            "we will keep searching and alert you by SMS."
                         )
         except Exception as exc:
             db.session.rollback()
