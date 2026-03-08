@@ -90,30 +90,26 @@ def claim_job(job_id):
 @bp.route("/stats", methods=["GET"])
 def get_stats():
     """Live counter stats for the judge command-center dashboard."""
-    active_hazards = HazardReport.query.filter(
-        HazardReport.status.in_(["ACTIVE", "UNVERIFIED"]),
-        HazardReport.expires_at > datetime.now(timezone.utc),
-    ).count()
+    place = request.args.get("place")
+    
+    sos_query = EmergencyJob.query
+    rider_query = Rider.query
+    hazard_query = HazardReport.query.filter(HazardReport.expires_at > datetime.now(timezone.utc))
+
+    if place:
+        sos_query = sos_query.filter_by(village_code=place)
+        rider_query = rider_query.filter_by(last_known_location_code=place)
+        hazard_query = hazard_query.filter(HazardReport.route_description.contains(place))
+
+    active_hazards = hazard_query.filter(HazardReport.status.in_(["ACTIVE", "UNVERIFIED"])).count()
 
     return jsonify(
         {
-            "jobs": {
-                "broadcasting": EmergencyJob.query.filter_by(status="BROADCASTING").count(),
-                "claimed": EmergencyJob.query.filter_by(status="CLAIMED").count(),
-                "resolved": EmergencyJob.query.filter(
-                    EmergencyJob.status.in_(["RESOLVED", "AUTO_RESOLVED"])
-                ).count(),
-                "cancelled": EmergencyJob.query.filter_by(status="CANCELLED").count(),
-            },
-            "riders": {
-                "total": Rider.query.count(),
-                "available": Rider.query.filter_by(status="AVAILABLE").count(),
-                "on_job": Rider.query.filter_by(status="ON_JOB").count(),
-                "offline": Rider.query.filter_by(status="OFFLINE").count(),
-            },
-            "hazards": {
-                "active": active_hazards,
-            },
+            "active_sos": sos_query.filter(EmergencyJob.status.in_(["BROADCASTING", "CLAIMED"])).count(),
+            "total_sos": sos_query.count(),
+            "available_riders": rider_query.filter_by(status="AVAILABLE").count(),
+            "total_riders": rider_query.count(),
+            "active_hazards": active_hazards,
         }
     )
 
@@ -121,14 +117,15 @@ def get_stats():
 @bp.route("/hazards", methods=["GET"])
 def list_hazards():
     """Return all non-expired hazard reports, newest first."""
+    place = request.args.get("place")
     now = datetime.now(timezone.utc)
-    hazards = (
-        HazardReport.query
-        .filter(HazardReport.expires_at > now)
-        .order_by(HazardReport.reported_at.desc())
-        .limit(50)
-        .all()
-    )
+    query = HazardReport.query.filter(HazardReport.status.in_(["ACTIVE", "UNVERIFIED"]), HazardReport.expires_at > now)
+    
+    if place:
+        query = query.filter(HazardReport.route_description.contains(place))
+        
+    hazards = query.order_by(HazardReport.reported_at.desc()).limit(50).all()
+
     return jsonify(
         [
             {
@@ -144,28 +141,76 @@ def list_hazards():
     )
 
 
-@bp.route("/jobs", methods=["GET"])
-def list_jobs():
-    """Return the 50 most recent emergency jobs for the dashboard live feed."""
-    jobs = (
-        EmergencyJob.query
-        .order_by(EmergencyJob.created_at.desc())
-        .limit(50)
-        .all()
-    )
-    return jsonify(
-        [
-            {
-                "job_id": j.job_id,
-                "caller_number": j.caller_number,
-                "village_code": j.village_code,
-                "emergency_type": j.emergency_type,
-                "status": j.status,
-                "assigned_rider": j.assigned_rider,
-                "created_at": j.created_at.isoformat() if j.created_at else None,
-                "resolved_at": j.resolved_at.isoformat() if j.resolved_at else None,
-                "cancellation_reason": j.cancellation_reason,
-            }
-            for j in jobs
-        ]
-    )
+@bp.route("/hazards/<int:hazard_id>/clear", methods=["POST"])
+def clear_hazard(hazard_id):
+    """Admin override to manually clear a hazard."""
+    hazard = db.session.get(HazardReport, hazard_id)
+    if not hazard:
+        raise ApplicationError(status_code=404, code="not_found", message="Hazard not found")
+        
+    hazard.status = "CLEARED"
+    db.session.commit()
+    return jsonify({"success": True, "message": f"Hazard {hazard_id} cleared."})
+
+
+@bp.route("/sos", methods=["GET"])
+def list_sos():
+    """Return the recent emergency jobs for the dashboard live feed."""
+    tab = request.args.get("tab", "all")
+    place = request.args.get("place")
+    
+    query = EmergencyJob.query
+
+    if tab == "active":
+        query = query.filter(EmergencyJob.status.in_(["BROADCASTING", "CLAIMED"]))
+    if place:
+        query = query.filter_by(village_code=place)
+
+    jobs = query.order_by(EmergencyJob.created_at.desc()).limit(50).all()
+
+    result = []
+    for job in jobs:
+        loc = db.session.get(Location, job.village_code)
+        rider = db.session.get(Rider, job.assigned_rider) if job.assigned_rider else None
+        
+        result.append({
+            "id": job.job_id,
+            "caller": job.caller_number,
+            "type": job.emergency_type,
+            "status": job.status,
+            "village": loc.name if loc else job.village_code,
+            "village_code": job.village_code,
+            "assigned_rider": rider.name if rider else job.assigned_rider,
+            "rider_phone": job.assigned_rider,
+            "time": job.created_at.isoformat() if job.created_at else None
+        })
+    return jsonify(result)
+
+
+@bp.route("/riders", methods=["GET"])
+def list_riders():
+    """Return the rider roster."""
+    tab = request.args.get("tab", "all")
+    place = request.args.get("place")
+    
+    query = Rider.query
+
+    if tab == "available":
+        query = query.filter_by(status="AVAILABLE")
+    if place:
+        query = query.filter_by(last_known_location_code=place)
+
+    riders = query.all()
+    
+    result = []
+    for rider in riders:
+        loc = db.session.get(Location, rider.last_known_location_code)
+        result.append({
+            "phone": rider.phone_number,
+            "name": rider.name,
+            "status": rider.status,
+            "current_location": loc.name if loc else rider.last_known_location_code,
+            "location_code": rider.last_known_location_code,
+            "is_verified": rider.is_verified
+        })
+    return jsonify(result)

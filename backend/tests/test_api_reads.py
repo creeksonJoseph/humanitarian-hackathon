@@ -64,12 +64,14 @@ def test_get_stats():
     resp = client.get("/api/stats")
     assert resp.status_code == 200
     data = resp.get_json()
-    assert "jobs" in data
-    assert "riders" in data
-    assert "hazards" in data
-    assert data["jobs"]["broadcasting"] >= 1
-    assert data["riders"]["total"] >= 1
-    assert data["hazards"]["active"] >= 1
+    assert "active_sos" in data
+    assert "total_sos" in data
+    assert "available_riders" in data
+    assert "total_riders" in data
+    assert "active_hazards" in data
+    assert data["active_sos"] >= 1
+    assert data["available_riders"] >= 1
+    assert data["active_hazards"] >= 1
 
 
 # ---- GET /api/hazards -------------------------------------------------------
@@ -87,17 +89,31 @@ def test_list_hazards():
     assert "status" in hazards[0]
 
 
-# ---- GET /api/jobs ----------------------------------------------------------
+# ---- GET /api/sos ----------------------------------------------------------
 
-def test_list_jobs():
+def test_list_sos():
     app = make_app()
     _seed(app)
     client = app.test_client()
-    resp = client.get("/api/jobs")
+    resp = client.get("/api/sos")
     assert resp.status_code == 200
     jobs = resp.get_json()
     assert isinstance(jobs, list)
     assert len(jobs) >= 1
-    assert "job_id" in jobs[0]
+    assert "id" in jobs[0]
     assert "status" in jobs[0]
-    assert "emergency_type" in jobs[0]
+    assert "type" in jobs[0]
+
+# ---- GET /api/riders -------------------------------------------------------
+
+def test_list_riders():
+    app = make_app()
+    _seed(app)
+    client = app.test_client()
+    resp = client.get("/api/riders")
+    assert resp.status_code == 200
+    riders = resp.get_json()
+    assert isinstance(riders, list)
+    assert len(riders) >= 1
+    assert "phone" in riders[0]
+    assert "status" in riders[0]

@@ -108,10 +108,16 @@ def ussd_callback():
                     EmergencyJob.status.in_(["BROADCASTING", "ESCALATED", "CLAIMED"]),
                 ).first()
                 if existing:
-                    response = (
-                        f"END Your SOS [Job {existing.job_id}] is already active "
-                        f"and a rider has been notified. Please wait."
-                    )
+                    if existing.status == "CLAIMED":
+                        response = (
+                            f"END Your SOS is already active "
+                            f"and claimed by a rider. We are monitoring the situation."
+                        )
+                    else:
+                        response = (
+                            f"END Your SOS is currently active. "
+                            f"We are still searching for an available rider."
+                        )
                 else:
                     new_job = EmergencyJob(
                         caller_number=phone_number,
@@ -292,7 +298,7 @@ def ussd_callback():
                     db.session.commit()
                     notify_candidates(job)
                     response = (
-                        f"END Noted. Finding you a new rider for Job {job.job_id}. "
+                        f"END Noted. Finding you a new rider. "
                         f"You will receive an SMS shortly."
                     )
                 else:
@@ -302,13 +308,13 @@ def ussd_callback():
                     reached = notify_candidates(job, surge=True)
                     if reached:
                         response = (
-                            f"END Re-sending SOS Job {job.job_id} to all available riders. "
-                            f"You will receive an SMS when someone accepts."
+                            f"END Re-sending SOS to all available riders. "
+                            f"You will receive an SMS confirmation."
                         )
                     else:
                         response = (
-                            f"END No riders available right now for Job {job.job_id}. "
-                            f"Please also try calling your nearest health centre."
+                            f"END No riders available right now. "
+                            f"Please call a health facility directly."
                         )
             except Exception as exc:
                 db.session.rollback()

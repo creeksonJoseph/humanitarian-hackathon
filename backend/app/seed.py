@@ -49,32 +49,35 @@ def seed_locations() -> int:
     return inserted
 
 
-# Three verified demo riders spread across Nyamira stages
+# Twenty verified demo riders spread across 4 Nyamira stages (5 per stage) for concurrency testing
 RIDERS = [
-    {
-        "phone_number": "+254711000001",
-        "name": "Otieno Mwangi",
-        "home_stage_code": "1001",   # Nyamaiya Stage
-        "last_known_location_code": "1001",
-        "is_verified": True,
-        "status": "AVAILABLE",
-    },
-    {
-        "phone_number": "+254722000002",
-        "name": "Akinyi Moraa",
-        "home_stage_code": "1003",   # Nyamira Town Stage
-        "last_known_location_code": "1003",
-        "is_verified": True,
-        "status": "AVAILABLE",
-    },
-    {
-        "phone_number": "+254733000003",
-        "name": "Bosire Nyamweya",
-        "home_stage_code": "1005",   # Manga Stage
-        "last_known_location_code": "1005",
-        "is_verified": True,
-        "status": "AVAILABLE",
-    },
+    # Nyamaiya Stage (1001) - 5 riders
+    {"phone_number": "+254711000001", "name": "Otieno Mwangi", "home_stage_code": "1001", "last_known_location_code": "1001", "is_verified": True, "status": "AVAILABLE"},
+    {"phone_number": "+254711000002", "name": "Kiprono Yegon", "home_stage_code": "1001", "last_known_location_code": "1001", "is_verified": True, "status": "AVAILABLE"},
+    {"phone_number": "+254711000003", "name": "James Ouko", "home_stage_code": "1001", "last_known_location_code": "1001", "is_verified": True, "status": "AVAILABLE"},
+    {"phone_number": "+254711000004", "name": "David Njuguna", "home_stage_code": "1001", "last_known_location_code": "1001", "is_verified": True, "status": "AVAILABLE"},
+    {"phone_number": "+254711000005", "name": "Peter Mutua", "home_stage_code": "1001", "last_known_location_code": "1001", "is_verified": True, "status": "AVAILABLE"},
+
+    # Miruka Stage (1002) - 5 riders
+    {"phone_number": "+254722000001", "name": "Akinyi Moraa", "home_stage_code": "1002", "last_known_location_code": "1002", "is_verified": True, "status": "AVAILABLE"},
+    {"phone_number": "+254722000002", "name": "Onyango Omondi", "home_stage_code": "1002", "last_known_location_code": "1002", "is_verified": True, "status": "AVAILABLE"},
+    {"phone_number": "+254722000003", "name": "Wanjiku Kamau", "home_stage_code": "1002", "last_known_location_code": "1002", "is_verified": True, "status": "AVAILABLE"},
+    {"phone_number": "+254722000004", "name": "Kevin Juma", "home_stage_code": "1002", "last_known_location_code": "1002", "is_verified": True, "status": "AVAILABLE"},
+    {"phone_number": "+254722000005", "name": "Brian Komen", "home_stage_code": "1002", "last_known_location_code": "1002", "is_verified": True, "status": "AVAILABLE"},
+
+    # Nyamira Town Stage (1003) - 5 riders
+    {"phone_number": "+254733000001", "name": "Bosire Nyamweya", "home_stage_code": "1003", "last_known_location_code": "1003", "is_verified": True, "status": "AVAILABLE"},
+    {"phone_number": "+254733000002", "name": "Daniel Wamalwa", "home_stage_code": "1003", "last_known_location_code": "1003", "is_verified": True, "status": "AVAILABLE"},
+    {"phone_number": "+254733000003", "name": "John Ochieng", "home_stage_code": "1003", "last_known_location_code": "1003", "is_verified": True, "status": "AVAILABLE"},
+    {"phone_number": "+254733000004", "name": "Samuel Kipkemboi", "home_stage_code": "1003", "last_known_location_code": "1003", "is_verified": True, "status": "AVAILABLE"},
+    {"phone_number": "+254733000005", "name": "Josephat Maina", "home_stage_code": "1003", "last_known_location_code": "1003", "is_verified": True, "status": "AVAILABLE"},
+
+    # Tombe Stage (1004) - 5 riders
+    {"phone_number": "+254744000001", "name": "Geoffrey Otwoma", "home_stage_code": "1004", "last_known_location_code": "1004", "is_verified": True, "status": "AVAILABLE"},
+    {"phone_number": "+254744000002", "name": "Isaac Ngige", "home_stage_code": "1004", "last_known_location_code": "1004", "is_verified": True, "status": "AVAILABLE"},
+    {"phone_number": "+254744000003", "name": "Victor Otieno", "home_stage_code": "1004", "last_known_location_code": "1004", "is_verified": True, "status": "AVAILABLE"},
+    {"phone_number": "+254744000004", "name": "George Kariuki", "home_stage_code": "1004", "last_known_location_code": "1004", "is_verified": True, "status": "AVAILABLE"},
+    {"phone_number": "+254744000005", "name": "Simon Kiptoo", "home_stage_code": "1004", "last_known_location_code": "1004", "is_verified": True, "status": "AVAILABLE"},
 ]
 
 

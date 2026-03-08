@@ -26,9 +26,11 @@ def create_app(test_config=None):
 
 	# Default config - use an absolute path to the SQLite file inside the instance folder
 	db_path = os.path.join(app.instance_path, "okoaroute.db")
+	database_url = os.getenv("DATABASE_URL", f"sqlite:///{db_path}")
+
 	app.config.from_mapping(
 		SECRET_KEY="dev",
-		SQLALCHEMY_DATABASE_URI=f"sqlite:///{db_path}",
+		SQLALCHEMY_DATABASE_URI=database_url,
 		SQLALCHEMY_TRACK_MODIFICATIONS=False,
 		# Africa's Talking credentials – set AT_API_KEY to switch from stub to real
 		AT_USERNAME=os.getenv("AFRICAS_TALKING_USERNAME", "sandbox"),
@@ -62,6 +64,13 @@ def create_app(test_config=None):
 		with app.app_context():
 			db.create_all()
 			print("Initialized the database.")
+
+	@app.cli.command("clean-db")
+	def clean_db_command():
+		"""Drop all database tables (useful for complete resets)."""
+		with app.app_context():
+			db.drop_all()
+			print("Dropped all tables in the database.")
 
 	# Seed Nyamira locations
 	@app.cli.command("seed-db")
