@@ -103,7 +103,18 @@ def sms_callback():
             _handle_accept(from_number, job.job_id)
         else:
             from .sms import send_sms
-            send_sms(from_number, "OkoaRoute: No active emergencies right now. Thank you for being ready.")
+            # If no broadcasting job exists, check if there's a recently CLAIMED one
+            recently_claimed = (
+                EmergencyJob.query
+                .filter(EmergencyJob.status.in_(["CLAIMED", "RESOLVED"]))
+                .order_by(EmergencyJob.created_at.desc())
+                .first()
+            )
+            # If there was a job in the last few hours, it was probably the one they were replying to
+            if recently_claimed:
+                send_sms(from_number, "OkoaRoute: This rescue has already been claimed by another rider. Thank you for responding.")
+            else:
+                send_sms(from_number, "OkoaRoute: No active emergencies right now. Thank you for being ready.")
 
     elif re.match(r"^ACCEPT\s+(\d+)$", text):
         job_id = int(re.match(r"^ACCEPT\s+(\d+)$", text).group(1))
