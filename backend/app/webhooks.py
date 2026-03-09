@@ -2,13 +2,14 @@
 import re
 import logging
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, make_response
 from sqlalchemy import text as sql_text
 
 from . import db
 from .models import EmergencyJob, Rider
 
 logger = logging.getLogger("app.webhooks")
+ussd_logger = logging.getLogger("app.ussd")
 
 bp = Blueprint("webhooks", __name__)
 
@@ -194,3 +195,329 @@ def _handle_drop(rider_phone: str, job_id: int):
     notify_candidates(job)
     send_sms(rider_phone, "OkoaRoute: You have dropped this rescue. Another rider will be dispatched.")
     logger.info("Job %s dropped by %s and re-broadcast", job_id, rider_phone)
+
+
+# ---------------------------------------------------------------------------
+# USSD Webhook  – Africa's Talking calls this on every keypress
+# ---------------------------------------------------------------------------
+
+@bp.route("/ussd", methods=["POST"])
+def ussd_callback():
+    """Handle HTTP POST requests from Africa's Talking USSD gateway."""
+    phone_number = request.values.get("phoneNumber", None)
+    text = request.values.get("text", "")
+
+    response = ""
+
+    # --- MAIN MENU ---
+    if text == "":
+        response = "CON Welcome to OkoaRoute Emergency\n"
+        response += "1. Request Emergency Boda\n"
+        response += "2. Report Road Hazard\n"
+        response += "3. Rider Check-in\n"
+        response += "4. Check Route Safety"
+        # Show option 5 if this caller has ANY active job (searching or rider assigned)
+        has_active_job = EmergencyJob.query.filter(
+            EmergencyJob.caller_number == phone_number,
+            EmergencyJob.status.in_(["BROADCASTING", "ESCALATED", "CLAIMED"]),
+        ).first()
+        if has_active_job:
+            response += "\n5. Report Rider No-Show / Re-send SOS"
+
+    # --- BRANCH 1: REQUEST EMERGENCY ---
+    elif text == "1":
+        # Check immediately if this caller already has an active job
+        active_job = EmergencyJob.query.filter(
+            EmergencyJob.caller_number == phone_number,
+            EmergencyJob.status.in_(["BROADCASTING", "ESCALATED", "CLAIMED"]),
+        ).order_by(EmergencyJob.created_at.desc()).first()
+
+        if active_job:
+            if active_job.status == "CLAIMED":
+                response = (
+                    "END A rider has already been dispatched to you. "
+                    "Please wait. If the rider has not arrived, dial again and select 5."
+                )
+            else:
+                response = (
+                    "END Your SOS is active and we are still searching for a rider. "
+                    "Please wait."
+                )
+        else:
+            response = "CON Select Emergency Type:\n"
+            response += "1. Maternity\n"
+            response += "2. Severe Injury\n"
+            response += "3. Other Medical"
+
+    elif text in ["1*1", "1*2", "1*3"]:
+        response = "CON Enter your 4-digit Village Code (e.g., 4050 for Ekerenyo):"
+
+    elif len(text.split("*")) == 3 and text.startswith("1*"):
+        from .models import Location
+        from .dispatch import notify_candidates
+        
+        parts = text.split("*")
+        emergency_type_map = {"1": "MATERNITY", "2": "INJURY", "3": "OTHER"}
+        selected_type = emergency_type_map.get(parts[1], "OTHER")
+        village_code = parts[2]
+        try:
+            if not db.session.get(Location, village_code):
+                response = (
+                    f"END Invalid village code '{village_code}'. "
+                    f"Please check the code and try again."
+                )
+            else:
+                existing = EmergencyJob.query.filter(
+                    EmergencyJob.caller_number == phone_number,
+                    EmergencyJob.status.in_(["BROADCASTING", "ESCALATED", "CLAIMED"]),
+                ).first()
+                if existing:
+                    if existing.status == "CLAIMED":
+                        response = (
+                            f"END Your SOS is already active "
+                            f"and claimed by a rider. We are monitoring the situation."
+                        )
+                    else:
+                        response = (
+                            f"END Your SOS is currently active. "
+                            f"We are still searching for an available rider."
+                        )
+                else:
+                    new_job = EmergencyJob(
+                        caller_number=phone_number,
+                        village_code=village_code,
+                        emergency_type=selected_type,
+                        status="BROADCASTING",
+                    )
+                    db.session.add(new_job)
+                    db.session.commit()
+                    ussd_logger.info(
+                        "[SOS CREATED] Job %s | type=%s village=%s caller=%s",
+                        new_job.job_id, selected_type, village_code, phone_number
+                    )
+                    reached = notify_candidates(new_job)
+                    ussd_logger.info(
+                        "[SOS DISPATCHED] Job %s | sent to %d rider(s): %s",
+                        new_job.job_id,
+                        len(reached),
+                        ", ".join(r[0] for r in reached) if reached else "none"
+                    )
+                    if reached:
+                        response = (
+                            "END SOS sent. Nearest riders have been notified. "
+                            "You will receive an SMS with details shortly."
+                        )
+                    else:
+                        ussd_logger.warning("[SOS NO RIDERS] Job %s — no AVAILABLE riders found", new_job.job_id)
+                        response = (
+                            "END SOS sent. No riders are nearby right now — "
+                            "we will keep searching and alert you by SMS."
+                        )
+        except Exception as exc:
+            db.session.rollback()
+            ussd_logger.exception("[SOS ERROR] caller=%s village=%s error=%s", phone_number, village_code if 'village_code' in dir() else '?', exc)
+            response = "END Error processing request. Please try again."
+
+
+    # --- BRANCH 2: REPORT HAZARD ---
+    elif text == "2":
+        response = "CON Select Hazard Type:\n"
+        response += "1. Floods\n"
+        response += "2. Downed Power Lines\n"
+        response += "3. Road Block\n"
+        response += "4. Other"
+
+    elif text in ["2*1", "2*2", "2*3", "2*4"]:
+        response = "CON Enter 4-digit code of the hazardous route:"
+
+    elif len(text.split("*")) == 3 and text.startswith("2*"):
+        from .models import HazardReport
+        from datetime import datetime, timezone
+        
+        parts = text.split("*")
+        hazard_type_map = {"1": "FLOOD", "2": "POWER_LINES", "3": "ROAD_BLOCK", "4": "OTHER"}
+        hazard_type = hazard_type_map.get(parts[1], "OTHER")
+        route_code = parts[2]
+        try:
+            rider = db.session.get(Rider, phone_number)
+            status = "ACTIVE" if (rider and rider.is_verified) else "UNVERIFIED"
+            if rider:
+                rider.last_known_location_code = route_code
+
+            hr = HazardReport(hazard_type=hazard_type, route_description=route_code, reported_by_number=phone_number, status=status)
+            db.session.add(hr)
+            db.session.commit()
+
+            if status == "UNVERIFIED":
+                now = datetime.now(timezone.utc)
+                existing = HazardReport.query.filter(
+                    HazardReport.route_description == route_code,
+                    HazardReport.status == "UNVERIFIED",
+                    HazardReport.reported_by_number != phone_number,
+                    HazardReport.expires_at > now,
+                ).first()
+                if existing:
+                    HazardReport.query.filter(
+                        HazardReport.route_description == route_code,
+                        HazardReport.status == "UNVERIFIED",
+                    ).update({"status": "ACTIVE"})
+                    db.session.commit()
+
+            response = f"END Thank you. Hazard reported for route {route_code}."
+        except Exception:
+            db.session.rollback()
+            response = "END Error saving hazard report."
+
+
+    # --- BRANCH 3: RIDER PORTAL ---
+    elif text == "3":
+        response = "CON Rider Portal:\n"
+        response += "1. Check in current location\n"
+        response += "2. Register as a Rider"
+        
+    # --- BRANCH 3.1: RIDER CHECK-IN ---
+    elif text == "3*1":
+        response = "CON Enter your 4-digit Stage Code to check in:"
+
+    elif len(text.split("*")) == 3 and text.startswith("3*1*"):
+        parts = text.split("*")
+        stage_code = parts[2]
+        try:
+            rider = db.session.get(Rider, phone_number)
+            if rider:
+                rider.last_known_location_code = stage_code
+                rider.status = "AVAILABLE"
+                db.session.commit()
+                response = f"END Check-in successful. Stage: {stage_code}. You will receive SOS alerts."
+            else:
+                response = "END You are not registered. Dial again and select 'Register as a Rider'."
+        except Exception:
+            db.session.rollback()
+            response = "END Error processing check-in. Please try again."
+
+    # --- BRANCH 3.2: RIDER REGISTRATION ---
+    elif text == "3*2":
+        response = "CON Enter your Full Name:"
+        
+    elif len(text.split("*")) == 3 and text.startswith("3*2*"):
+        response = "CON Enter your 4-digit Home Stage Code:"
+        
+    elif len(text.split("*")) == 4 and text.startswith("3*2*"):
+        parts = text.split("*")
+        name = parts[2]
+        stage_code = parts[3]
+        try:
+            rider = db.session.get(Rider, phone_number)
+            if rider:
+                response = "END You are already registered as a rider."
+            else:
+                new_rider = Rider(
+                    phone_number=phone_number,
+                    name=name,          
+                    home_stage_code=stage_code,
+                    last_known_location_code=stage_code,
+                    is_verified=False,
+                    status="AVAILABLE",
+                )
+                db.session.add(new_rider)
+                db.session.commit()
+                response = (
+                    f"END You have successfully registered pending approval."
+                )
+        except Exception:
+            db.session.rollback()
+            response = "END Error processing registration. Please try again."
+
+    # --- BRANCH 4: CHECK ROUTE SAFETY ---
+    elif text == "4":
+        response = "CON Enter 4-digit route code to check (e.g., 4050 for Ekerenyo):"
+
+    elif len(text.split("*")) == 2 and text.startswith("4*"):
+        from datetime import datetime, timezone
+        from .models import HazardReport
+        
+        route_code = text.split("*")[1]
+
+        if not route_code.isdigit() or len(route_code) != 4:
+            response = "END Invalid route code. Please enter a 4-digit code (e.g., 4050)."
+        else:
+            now = datetime.now(timezone.utc)
+            active_hazards = HazardReport.query.filter(
+                HazardReport.route_description == route_code,
+                HazardReport.status.in_(["ACTIVE", "UNVERIFIED"]),
+                HazardReport.expires_at > now,
+            ).all()
+            if not active_hazards:
+                response = f"END Route {route_code}: No reported hazards. Route appears safe."
+            else:
+                verified = sum(1 for h in active_hazards if h.status == "ACTIVE")
+                unverified = len(active_hazards) - verified
+                latest = max(active_hazards, key=lambda h: h.reported_at or h.expires_at)
+                reported_str = latest.reported_at.strftime("%d %b %H:%M") if latest.reported_at else "recently"
+
+                parts = []
+                if verified:
+                    parts.append(f"{verified} verified report{'s' if verified > 1 else ''}")
+                if unverified:
+                    parts.append(f"{unverified} unverified report{'s' if unverified > 1 else ''}")
+
+                response = (
+                    f"END ⚠️ HAZARD ALERT: Route {route_code}\n"
+                    f"{', '.join(parts)}.\n"
+                    f"Last reported: {reported_str}.\n"
+                    f"Use caution or find an alternative route."
+                )
+
+    # --- BRANCH 5: REPORT NO-SHOW / RE-SEND SOS ---
+    elif text == "5":
+        from .dispatch import notify_candidates
+        
+        job = EmergencyJob.query.filter(
+            EmergencyJob.caller_number == phone_number,
+            EmergencyJob.status.in_(["BROADCASTING", "ESCALATED", "CLAIMED"]),
+        ).order_by(EmergencyJob.created_at.desc()).first()
+
+        if not job:
+            response = "END No active job found for your number. Select option 1 to call for help."
+        else:
+            try:
+                if job.status == "CLAIMED":
+                    ghost_rider_phone = job.assigned_rider
+                    job.assigned_rider = None
+                    job.status = "BROADCASTING"
+                    job.cancellation_reason = "RIDER_NO_SHOW"
+                    if ghost_rider_phone:
+                        ghost_rider = db.session.get(Rider, ghost_rider_phone)
+                        if ghost_rider:
+                            ghost_rider.status = "AVAILABLE"
+                    db.session.commit()
+                    notify_candidates(job)
+                    response = (
+                        f"END Noted. Finding you a new rider. "
+                        f"You will receive an SMS shortly."
+                    )
+                else:
+                    job.status = "BROADCASTING"
+                    db.session.commit()
+                    reached = notify_candidates(job, surge=True)
+                    if reached:
+                        response = (
+                            f"END Re-sending SOS to all available riders. "
+                            f"You will receive an SMS confirmation."
+                        )
+                    else:
+                        response = (
+                            f"END No riders available right now. "
+                            f"Please call a health facility directly."
+                        )
+            except Exception as exc:
+                db.session.rollback()
+                ussd_logger.exception("[OPTION 5 ERROR] caller=%s error=%s", phone_number, exc)
+                response = "END Error processing. Please try again."
+
+    else:
+        response = "END Invalid input. Please try again."
+
+    r = make_response(response, 200)
+    r.headers["Content-Type"] = "text/plain"
+    return r
