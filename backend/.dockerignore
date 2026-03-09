@@ -1,0 +1,16 @@
+.venv
+myenv
+.venv-1
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.vscode
+.git
+.marscode
+instance/
+ngrok
+ngrok-v3-stable-linux-amd64.tgz
+Pipfile.lock
+Pipfile
