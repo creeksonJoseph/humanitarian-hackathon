@@ -32,9 +32,10 @@ def health_check():
 
     return jsonify(
         {
-            "status": "ok" if db_status == "ok" else "degraded",
+            "status": "The server is up and running" if db_status == "ok" else "The server has degraded",
             "database": db_status,
             "version": "1.0.0",
+            
         }
     )
 
