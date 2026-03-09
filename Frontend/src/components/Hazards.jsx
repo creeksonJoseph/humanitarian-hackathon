@@ -17,7 +17,7 @@ export default function Hazards({ hazards, handleClear }) {
                     <span className="material-symbols-outlined text-slate-500 text-3xl">report_problem</span>
                     <p className="text-slate-500 text-sm">No active hazards reported.</p>
                 </div>
-                <div className="p-4 border-t border-slate-700 flex justify-center bg-slate-800/30 w-full mt-auto">
+                <div className="p-4 border-t border-slate-700 flex justify-center bg-slate-800/30 w-full">
                     <Link to="/hazards" className="text-sm font-medium text-amber-500 hover:text-amber-400 uppercase tracking-wide flex items-center gap-1 transition-colors">
                         View All Hazards
                         <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -28,7 +28,7 @@ export default function Hazards({ hazards, handleClear }) {
     }
 
     return (
-        <section className="bg-slate-panel rounded-xl overflow-hidden border border-slate-700 h-[800px] flex flex-col">
+        <section className="bg-slate-panel rounded-xl overflow-hidden border border-slate-700 flex flex-col">
             <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
                 <h2 className="oswald text-xl font-semibold tracking-wide flex items-center gap-2 text-amber-500">
                     <span className="material-symbols-outlined">warning</span>
@@ -63,7 +63,7 @@ export default function Hazards({ hazards, handleClear }) {
                     </div>
                 ))}
             </div>
-            <div className="p-4 border-t border-slate-700 flex justify-center bg-slate-800/30 mt-auto">
+            <div className="p-4 border-t border-slate-700 flex justify-center bg-slate-800/30">
                 <Link to="/hazards" className="text-sm font-medium text-amber-500 hover:text-amber-400 uppercase tracking-wide flex items-center gap-1 transition-colors">
                     View All Hazards
                     <span className="material-symbols-outlined text-sm">arrow_forward</span>

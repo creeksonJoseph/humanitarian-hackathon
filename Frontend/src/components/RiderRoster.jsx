@@ -16,7 +16,7 @@ export default function RiderRoster({ riders }) {
                     <span className="material-symbols-outlined text-slate-500 text-3xl">sports_motorsports</span>
                     <p className="text-slate-500 text-sm">No riders currently available.</p>
                 </div>
-                <div className="px-6 py-4 border-t border-slate-700 flex justify-center bg-slate-800/30 w-full mt-auto">
+                <div className="px-6 py-4 border-t border-slate-700 flex justify-center bg-slate-800/30 w-full">
                     <Link to="/riders" className="text-sm font-medium text-emerald-500 hover:text-emerald-400 uppercase tracking-wide flex items-center gap-1 transition-colors">
                         View All Riders
                         <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -27,7 +27,7 @@ export default function RiderRoster({ riders }) {
     }
 
     return (
-        <section className="bg-slate-panel rounded-xl overflow-hidden border border-slate-700 flex flex-col h-full">
+        <section className="bg-slate-panel rounded-xl overflow-hidden border border-slate-700 flex flex-col">
             <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
                 <h2 className="oswald text-xl font-semibold tracking-wide flex items-center gap-2">
                     <span className="material-symbols-outlined text-emerald-500">sports_motorsports</span>
@@ -64,7 +64,7 @@ export default function RiderRoster({ riders }) {
                     </tbody>
                 </table>
             </div>
-            <div className="px-6 py-4 border-t border-slate-700 flex justify-center bg-slate-800/30 mt-auto">
+            <div className="px-6 py-4 border-t border-slate-700 flex justify-center bg-slate-800/30">
                 <Link to="/riders" className="text-sm font-medium text-emerald-500 hover:text-emerald-400 uppercase tracking-wide flex items-center gap-1 transition-colors">
                     View All Riders
                     <span className="material-symbols-outlined text-sm">arrow_forward</span>
