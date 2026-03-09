@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import { fetchRiders, verifyRider } from "../api/riders";
+import { useLocation } from "../context/LocationContext";
 
 export default function PendingVerifications() {
     const navigate = useNavigate();
+    const { selectedLocation } = useLocation();
     const [pendingRiders, setPendingRiders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [verifyingId, setVerifyingId] = useState(null);
@@ -14,7 +16,7 @@ export default function PendingVerifications() {
         setIsLoading(true);
         try {
             // Fetching riders directly from backend
-            const response = await fetchRiders("pending", "", 1, 50);
+            const response = await fetchRiders("pending", selectedLocation, "", 1, 50);
             
             const pending = response.data || [];
             setPendingRiders(pending);
@@ -32,7 +34,9 @@ export default function PendingVerifications() {
 
     useEffect(() => {
         loadPendingRiders();
-    }, []);
+        const interval = setInterval(loadPendingRiders, 5000);
+        return () => clearInterval(interval);
+    }, [selectedLocation]);
 
     // Approve rider
     const handleVerifyClick = async (phone) => {
@@ -53,7 +57,7 @@ export default function PendingVerifications() {
 
     return (
         <div className="layout-container flex flex-col min-h-screen">
-            <Header locations={[]} selectedLocation="" setSelectedLocation={() => {}} />
+            <Header />
 
             <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
                 {/* Header Section */}

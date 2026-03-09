@@ -119,12 +119,13 @@ def get_stats():
     
     sos_query = EmergencyJob.query
     rider_query = Rider.query
-    hazard_query = HazardReport.query.filter(HazardReport.expires_at > datetime.now(timezone.utc))
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+    hazard_query = HazardReport.query.filter(HazardReport.expires_at > now_naive)
 
     if place:
         sos_query = sos_query.filter_by(village_code=place)
         rider_query = rider_query.filter_by(last_known_location_code=place)
-        hazard_query = hazard_query.filter(HazardReport.route_description.contains(place))
+        hazard_query = hazard_query.filter(HazardReport.route_description.ilike(f"%{place}%"))
 
     active_hazards = hazard_query.filter(HazardReport.status.in_(["ACTIVE", "UNVERIFIED"])).count()
 
@@ -147,12 +148,12 @@ def list_hazards():
     place = request.args.get("place")
     page = request.args.get("page", 1, type=int)
     limit = request.args.get("limit", 50, type=int)
-    now = datetime.now(timezone.utc)
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
     
-    query = HazardReport.query.filter(HazardReport.status.in_(["ACTIVE", "UNVERIFIED"]), HazardReport.expires_at > now)
+    query = HazardReport.query.filter(HazardReport.status.in_(["ACTIVE", "UNVERIFIED"]), HazardReport.expires_at > now_naive)
     
     if place:
-        query = query.filter(HazardReport.route_description.contains(place))
+        query = query.filter(HazardReport.route_description.ilike(f"%{place}%"))
         
     total_count = query.count()
     total_pages = (total_count + limit - 1) // limit if total_count > 0 else 1

@@ -1,4 +1,8 @@
-export default function Header({ locations, selectedLocation, setSelectedLocation }) {
+import { useLocation } from '../context/LocationContext';
+
+export default function Header() {
+    const { locations, selectedLocation, setSelectedLocation } = useLocation();
+    
     return (
         <header className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-panel px-6 py-4 sticky top-0 z-50">
             <div className="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-4">

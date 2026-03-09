@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import { fetchHazards, clearHazard } from "../api/hazards";
 import { fetchStats } from "../api/stats";
+import { useLocation } from "../context/LocationContext";
 
 export default function Hazards() {
     const navigate = useNavigate();
+    const { selectedLocation } = useLocation();
     const [hazards, setHazards] = useState([]);
     const [stats, setStats] = useState({ active_hazards: 0, unverified_hazards: 0 });
     const [isLoading, setIsLoading] = useState(true);
@@ -17,8 +19,8 @@ export default function Hazards() {
         setIsLoading(true);
         try {
             const [hazardsRes, statsRes] = await Promise.all([
-                fetchHazards("", page, 50).catch(() => null),
-                fetchStats().catch(() => null)
+                fetchHazards(selectedLocation, page, 50).catch(() => null),
+                fetchStats(selectedLocation).catch(() => null)
             ]);
             
             if (hazardsRes) {
@@ -39,8 +41,15 @@ export default function Hazards() {
     };
 
     useEffect(() => {
+        setPage(1);
+    }, [selectedLocation]);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         loadHazards();
-    }, [page]);
+        const interval = setInterval(loadHazards, 5000);
+        return () => clearInterval(interval);
+    }, [page, selectedLocation]);
 
     const handleClearHazard = async (id) => {
         setClearingId(id);
@@ -81,7 +90,7 @@ export default function Hazards() {
 
     return (
         <div className="layout-container flex flex-col min-h-screen">
-            <Header locations={[]} selectedLocation="" setSelectedLocation={() => {}} />
+            <Header />
 
             <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
                 {/* Header Section */}

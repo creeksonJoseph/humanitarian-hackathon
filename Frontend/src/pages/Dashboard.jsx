@@ -8,11 +8,10 @@ import { fetchStats } from "../api/stats";
 import { fetchSos } from "../api/sos";
 import { fetchRiders } from "../api/riders";
 import { fetchHazards, clearHazard } from "../api/hazards";
-import { fetchLocations } from "../api/locations";
+import { useLocation } from "../context/LocationContext";
 
 function Dashboard() {
-    const [locations, setLocations] = useState([]);
-    const [selectedLocation, setSelectedLocation] = useState("");
+    const { selectedLocation } = useLocation();
     
     const [stats, setStats] = useState({
         active_sos: 0,
@@ -44,21 +43,6 @@ function Dashboard() {
             console.error("Error fetching data:", error);
         }
     }, [selectedLocation]);
-
-    const fetchLocationsList = async () => {
-        try {
-            const res = await fetchLocations();
-            setLocations(res);
-        } catch (error) {
-            console.error(error);
-        }
-    }
-
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        fetchLocationsList();
-    }, []);
-
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchData();
@@ -77,7 +61,7 @@ function Dashboard() {
 
     return (
         <>
-            <Header locations={locations} selectedLocation={selectedLocation} setSelectedLocation={setSelectedLocation} />
+            <Header />
             <main className="max-w-[1600px] mx-auto p-6 space-y-6">
                 <Stats stats={stats} />
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

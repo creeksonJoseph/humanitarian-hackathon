@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import { fetchSos } from "../api/sos";
 import { fetchStats } from "../api/stats";
+import { useLocation } from "../context/LocationContext";
 
 export default function Sos() {
     const navigate = useNavigate();
+    const { selectedLocation } = useLocation();
     const [sosCalls, setSosCalls] = useState([]);
     const [stats, setStats] = useState({ total_sos: 0, active_sos: 0 });
     const [isLoading, setIsLoading] = useState(true);
@@ -17,8 +19,8 @@ export default function Sos() {
         try {
             const [sosRes, statsRes] = await Promise.all([
                 // Fetching all SOS calls (active and resolved)
-                fetchSos("all", "", page, 50).catch(() => null),
-                fetchStats().catch(() => null)
+                fetchSos("all", selectedLocation, page, 50).catch(() => null),
+                fetchStats(selectedLocation).catch(() => null)
             ]);
             
             if (sosRes) {
@@ -40,8 +42,14 @@ export default function Sos() {
     };
 
     useEffect(() => {
+        setPage(1);
+    }, [selectedLocation]);
+
+    useEffect(() => {
         loadSosCalls();
-    }, [page]);
+        const interval = setInterval(loadSosCalls, 5000);
+        return () => clearInterval(interval);
+    }, [page, selectedLocation]);
 
     // Helper function to format date
     const formatDate = (isoString) => {
@@ -80,7 +88,7 @@ export default function Sos() {
 
     return (
         <div className="layout-container flex flex-col min-h-screen">
-            <Header locations={[]} selectedLocation="" setSelectedLocation={() => {}} />
+            <Header />
 
             <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
                 {/* Header Section */}

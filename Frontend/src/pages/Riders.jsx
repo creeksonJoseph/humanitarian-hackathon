@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import { fetchRiders } from "../api/riders";
 import { fetchStats } from "../api/stats";
+import { useLocation } from "../context/LocationContext";
 
 export default function Riders() {
     const navigate = useNavigate();
+    const { selectedLocation } = useLocation();
     const [riders, setRiders] = useState([]);
     const [stats, setStats] = useState({ total_riders: 0, available_riders: 0 });
     const [isLoading, setIsLoading] = useState(true);
@@ -18,8 +20,8 @@ export default function Riders() {
         setIsLoading(true);
         try {
             const [ridersRes, statsRes] = await Promise.all([
-                fetchRiders(activeTab, "", searchQuery, page, 50).catch(() => null),
-                fetchStats().catch(() => null)
+                fetchRiders(activeTab, selectedLocation, searchQuery, page, 50).catch(() => null),
+                fetchStats(selectedLocation).catch(() => null)
             ]);
 
             if (ridersRes) {
@@ -37,16 +39,16 @@ export default function Riders() {
     // Reset pagination when filter changes
     useEffect(() => {
         setPage(1);
-    }, [activeTab, searchQuery]);
+    }, [activeTab, searchQuery, selectedLocation]);
 
     useEffect(() => {
         loadData();
         const interval = setInterval(loadData, 5000);
         return () => clearInterval(interval);
-    }, [page, activeTab, searchQuery]);
+    }, [page, activeTab, searchQuery, selectedLocation]);
     return (
         <div className="layout-container flex flex-col min-h-screen">
-            <Header locations={[]} selectedLocation="" setSelectedLocation={() => {}} />
+            <Header />
 
             <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
                 {/* Header Section */}
