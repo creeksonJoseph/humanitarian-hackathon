@@ -17,10 +17,10 @@ export default function Sidebar() {
 
     const navItems = [
         { path: "/", label: "Dashboard", icon: LayoutDashboard },
+        { path: "/sos", label: "SOS Feed", icon: RadioReceiver },
         { path: "/riders", label: "Riders", icon: Users },
         { path: "/pending-verifications", label: "Verifications", icon: ShieldAlert },
         { path: "/hazards", label: "Hazards", icon: TriangleAlert },
-        { path: "/sos", label: "SOS Feed", icon: RadioReceiver },
     ];
 
     return (

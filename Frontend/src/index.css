@@ -21,9 +21,12 @@
 }
 
 @layer base {
-  *,
+  *:not(.material-symbols-outlined),
   body {
     font-family: "Playfair Display", serif !important;
+  }
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined' !important;
   }
   .font-oswald,
   .oswald,
