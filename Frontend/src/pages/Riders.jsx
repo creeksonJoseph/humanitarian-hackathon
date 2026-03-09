@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "../components/Header";
 import { fetchRiders } from "../api/riders";
 import { fetchStats } from "../api/stats";
 import { useLocation } from "../context/LocationContext";
@@ -50,8 +49,6 @@ export default function Riders() {
     }, [page, activeTab, searchQuery, selectedLocation]);
     return (
         <div className="layout-container flex flex-col min-h-screen">
-            <Header />
-
             <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">

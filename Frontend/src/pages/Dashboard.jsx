@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import Header from "../components/Header";
 import Stats from "../components/Stats";
 import SosFeed from "../components/SosFeed";
 import RiderRoster from "../components/RiderRoster";
@@ -61,7 +60,6 @@ function Dashboard() {
 
     return (
         <>
-            <Header />
             <main className="max-w-[1600px] mx-auto p-6 space-y-6">
                 <Stats stats={stats} />
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

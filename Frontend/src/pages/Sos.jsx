@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import Header from "../components/Header";
 import { fetchSos } from "../api/sos";
 import { fetchStats } from "../api/stats";
 import { useLocation } from "../context/LocationContext";
@@ -88,8 +87,6 @@ export default function Sos() {
 
     return (
         <div className="layout-container flex flex-col min-h-screen">
-            <Header />
-
             <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">

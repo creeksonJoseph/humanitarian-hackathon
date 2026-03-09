@@ -27,17 +27,6 @@ export default function Sidebar() {
         <aside 
             className={`bg-slate-panel border-r border-slate-700/50 flex flex-col transition-all duration-300 relative ${collapsed ? 'w-20' : 'w-64'}`}
         >
-            {/* Logo Area */}
-            <div className="h-20 flex items-center justify-center border-b border-slate-700/50">
-                <div className="flex items-center gap-2">
-                    <Map className="w-8 h-8 text-primary" />
-                    {!collapsed && (
-                        <h1 className="font-display uppercase font-bold text-white tracking-widest text-xl">
-                            Okoa<span className="text-primary">Route</span>
-                        </h1>
-                    )}
-                </div>
-            </div>
 
             {/* Collapse Toggle */}
             <button 
