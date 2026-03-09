@@ -2,6 +2,7 @@ from marshmallow import Schema, fields, validate
 
 
 class HazardReportSchema(Schema):
+    hazard_type = fields.Str(required=True)
     route_description = fields.Str(required=True)
     reported_by_number = fields.Str(required=True)
     status = fields.Str(validate=validate.OneOf(["ACTIVE", "UNVERIFIED", "CLEARED"]), load_default="UNVERIFIED")

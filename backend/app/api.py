@@ -65,6 +65,31 @@ def rider_checkin(phone):
     return jsonify({"status": "ok"})
 
 
+@bp.route("/riders/<phone>/verify", methods=["POST"])
+def verify_rider(phone):
+    """Verify a rider from the Command Center and send SMS notification."""
+    from .sms import send_sms
+    
+    rider = db.session.get(Rider, phone)
+    if not rider:
+        raise ApplicationError(status_code=404, code="rider_not_found", message="Rider not found")
+
+    if rider.is_verified:
+        return jsonify({"success": True, "message": "Rider is already verified"}), 200
+
+    rider.is_verified = True
+    db.session.commit()
+
+    # Send notification SMS
+    content = f"Dear {rider.name}, you have been approved as a rescue rider. Be ready to accept SOS alerts securely."
+    try:
+        send_sms(rider.phone_number, content)
+    except Exception as e:
+        current_app.logger.error(f"Failed to send verification SMS to {phone}: {e}")
+
+    return jsonify({"success": True, "message": f"Rider {rider.name} verified successfully."}), 200
+
+
 @bp.route("/jobs/<int:job_id>/claim", methods=["POST"])
 @require_api_key
 def claim_job(job_id):
@@ -130,6 +155,7 @@ def list_hazards():
         [
             {
                 "id": h.id,
+                "hazard_type": h.hazard_type,
                 "route_description": h.route_description,
                 "reported_by_number": h.reported_by_number,
                 "status": h.status,
@@ -214,3 +240,9 @@ def list_riders():
             "is_verified": rider.is_verified
         })
     return jsonify(result)
+
+@bp.route("/locations", methods=["GET"])
+def list_locations():
+    """Return all known locations (villages/stages) for filtering."""
+    locations = Location.query.all()
+    return jsonify([{"code": l.code, "name": l.name, "type": l.type} for l in locations])

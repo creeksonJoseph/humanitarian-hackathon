@@ -158,18 +158,27 @@ def ussd_callback():
 
     # --- BRANCH 2: REPORT HAZARD ---
     elif text == "2":
+        response = "CON Select Hazard Type:\n"
+        response += "1. Floods\n"
+        response += "2. Downed Power Lines\n"
+        response += "3. Road Block\n"
+        response += "4. Other"
+
+    elif text in ["2*1", "2*2", "2*3", "2*4"]:
         response = "CON Enter 4-digit code of the hazardous route:"
 
-    elif len(text.split("*")) == 2 and text.startswith("2*"):
+    elif len(text.split("*")) == 3 and text.startswith("2*"):
         parts = text.split("*")
-        route_code = parts[1]
+        hazard_type_map = {"1": "FLOOD", "2": "POWER_LINES", "3": "ROAD_BLOCK", "4": "OTHER"}
+        hazard_type = hazard_type_map.get(parts[1], "OTHER")
+        route_code = parts[2]
         try:
             rider = db.session.get(Rider, phone_number)
             status = "ACTIVE" if (rider and rider.is_verified) else "UNVERIFIED"
             if rider:
                 rider.last_known_location_code = route_code
 
-            hr = HazardReport(route_description=route_code, reported_by_number=phone_number, status=status)
+            hr = HazardReport(hazard_type=hazard_type, route_description=route_code, reported_by_number=phone_number, status=status)
             db.session.add(hr)
             db.session.commit()
 
@@ -198,13 +207,19 @@ def ussd_callback():
             response = "END Error saving hazard report."
 
 
-    # --- BRANCH 3: RIDER CHECK-IN ---
+    # --- BRANCH 3: RIDER PORTAL ---
     elif text == "3":
+        response = "CON Rider Portal:\n"
+        response += "1. Check in current location\n"
+        response += "2. Register as a Rider"
+        
+    # --- BRANCH 3.1: RIDER CHECK-IN ---
+    elif text == "3*1":
         response = "CON Enter your 4-digit Stage Code to check in:"
 
-    elif len(text.split("*")) == 2 and text.startswith("3*"):
+    elif len(text.split("*")) == 3 and text.startswith("3*1*"):
         parts = text.split("*")
-        stage_code = parts[1]
+        stage_code = parts[2]
         try:
             rider = db.session.get(Rider, phone_number)
             if rider:
@@ -214,11 +229,31 @@ def ussd_callback():
                 db.session.commit()
                 response = f"END Check-in successful. Stage: {stage_code}. You will receive SOS alerts."
             else:
-                # Self-registration: anyone can volunteer during a disaster.
-                # Name defaults to their phone number — admin can update later.
+                response = "END You are not registered. Dial again and select 'Register as a Rider'."
+        except Exception:
+            db.session.rollback()
+            response = "END Error processing check-in. Please try again."
+
+    # --- BRANCH 3.2: RIDER REGISTRATION ---
+    elif text == "3*2":
+        response = "CON Enter your Full Name:"
+        
+    elif len(text.split("*")) == 3 and text.startswith("3*2*"):
+        response = "CON Enter your 4-digit Home Stage Code:"
+        
+    elif len(text.split("*")) == 4 and text.startswith("3*2*"):
+        parts = text.split("*")
+        name = parts[2]
+        stage_code = parts[3]
+        try:
+            rider = db.session.get(Rider, phone_number)
+            if rider:
+                response = "END You are already registered as a rider."
+            else:
+                # Self-registration: anyone can apply.
                 new_rider = Rider(
                     phone_number=phone_number,
-                    name=phone_number,          # placeholder name
+                    name=name,          
                     home_stage_code=stage_code,
                     last_known_location_code=stage_code,
                     is_verified=False,          # unverified until admin confirms
@@ -227,12 +262,11 @@ def ussd_callback():
                 db.session.add(new_rider)
                 db.session.commit()
                 response = (
-                    f"END Registered & checked in at stage {stage_code}. "
-                    f"You will receive SOS rescue alerts. Thank you for volunteering."
+                    f"END You have successfully registered pending approval."
                 )
         except Exception:
             db.session.rollback()
-            response = "END Error processing check-in. Please try again."
+            response = "END Error processing registration. Please try again."
 
     # --- BRANCH 4: CHECK ROUTE SAFETY ---
     elif text == "4":
