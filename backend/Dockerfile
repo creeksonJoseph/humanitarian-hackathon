@@ -54,4 +54,6 @@ EXPOSE 10000
 
 # Run the application using Gunicorn
 # Binds to 0.0.0.0 and uses Render's dynamic PORT environment variable (defaulting to 10000)
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-10000} app:app"]
+# Uses "app:create_app()" since `app.py` has `app = create_app()` but the app logic
+# requires the application factory to be called to properly initialize blueprints and the DB.
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-10000} 'app:create_app()'"]
