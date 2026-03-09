@@ -18,14 +18,16 @@ def create_app(test_config=None):
 	"""Create and configure the Flask application."""
 	app = Flask(__name__, instance_relative_config=True)
 
-	# ensure the instance folder exists early so we can build an absolute DB path
+	# Use an absolute path to the SQLite file inside the backend folder explicitly
+	basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+	instance_dir = os.path.join(basedir, "instance")
+	
 	try:
-		os.makedirs(app.instance_path, exist_ok=True)
+		os.makedirs(instance_dir, exist_ok=True)
 	except OSError:
 		pass
 
-	# Default config - use an absolute path to the SQLite file inside the instance folder
-	db_path = os.path.join(app.instance_path, "okoaroute.db")
+	db_path = os.path.join(instance_dir, "okoaroute.db")
 	database_url = os.getenv("DATABASE_URL", f"sqlite:///{db_path}")
 
 	app.config.from_mapping(

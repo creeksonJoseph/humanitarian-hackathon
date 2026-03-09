@@ -241,6 +241,7 @@ def list_riders():
     """Return the rider roster, paginated."""
     tab = request.args.get("tab", "all")
     place = request.args.get("place")
+    search = request.args.get("search")
     page = request.args.get("page", 1, type=int)
     limit = request.args.get("limit", 50, type=int)
     
@@ -253,6 +254,11 @@ def list_riders():
         
     if place:
         query = query.filter_by(last_known_location_code=place)
+        
+    if search:
+        query = query.filter(
+            (Rider.name.ilike(f"%{search}%")) | (Rider.phone_number.ilike(f"%{search}%"))
+        )
 
     total_count = query.count()
     total_pages = (total_count + limit - 1) // limit if total_count > 0 else 1

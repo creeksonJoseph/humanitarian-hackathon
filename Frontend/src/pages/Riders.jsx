@@ -11,12 +11,14 @@ export default function Riders() {
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [activeTab, setActiveTab] = useState("all");
+    const [searchQuery, setSearchQuery] = useState("");
 
     const loadData = async () => {
         setIsLoading(true);
         try {
             const [ridersRes, statsRes] = await Promise.all([
-                fetchRiders("all", "", page, 50).catch(() => null),
+                fetchRiders(activeTab, "", searchQuery, page, 50).catch(() => null),
                 fetchStats().catch(() => null)
             ]);
 
@@ -32,11 +34,16 @@ export default function Riders() {
         }
     };
 
+    // Reset pagination when filter changes
+    useEffect(() => {
+        setPage(1);
+    }, [activeTab, searchQuery]);
+
     useEffect(() => {
         loadData();
         const interval = setInterval(loadData, 5000);
         return () => clearInterval(interval);
-    }, [page]);
+    }, [page, activeTab, searchQuery]);
     return (
         <div className="layout-container flex flex-col min-h-screen">
             <Header locations={[]} selectedLocation="" setSelectedLocation={() => {}} />
@@ -73,7 +80,28 @@ export default function Riders() {
                     {/* Navigation & Search */}
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-slate-700/50 px-6 py-4 gap-4 bg-slate-800/30">
                         <div className="flex gap-1 p-1 bg-slate-900 rounded-lg w-fit">
-                            <button className="px-6 py-2 rounded-md bg-primary text-white font-display uppercase text-sm tracking-wide">All Riders</button>
+                            <button 
+                                onClick={() => setActiveTab("all")}
+                                className={`px-4 py-2 rounded-md font-display uppercase text-sm tracking-wide transition-colors ${activeTab === 'all' ? 'bg-primary text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                            >
+                                All Riders
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab("available")}
+                                className={`px-4 py-2 rounded-md font-display uppercase text-sm tracking-wide transition-colors ${activeTab === 'available' ? 'bg-primary text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                            >
+                                Available Riders
+                            </button>
+                        </div>
+                        <div className="relative max-w-sm w-full">
+                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
+                            <input 
+                                type="text"
+                                placeholder="Search riders by name or phone..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                            />
                         </div>
                     </div>
 

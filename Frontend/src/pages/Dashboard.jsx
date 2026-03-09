@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Header from "../components/Header";
 import Stats from "../components/Stats";
+import SosFeed from "../components/SosFeed";
+import RiderRoster from "../components/RiderRoster";
 import Hazards from "../components/Hazards";
 import { fetchStats } from "../api/stats";
 import { fetchSos } from "../api/sos";
