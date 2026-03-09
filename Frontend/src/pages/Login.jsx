@@ -1,14 +1,26 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import apiClient from "../api/api";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e) => {
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Login logic will be added when backend auth is ready
-    console.log("Login attempt:", { username, password });
+    setError(null);
+    try {
+      const response = await apiClient.post("/login", { username, password });
+      const { token } = response.data;
+      localStorage.setItem("token", token);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.response?.data?.message || "Login failed. Please try again.");
+    }
   };
 
   return (
@@ -41,6 +53,11 @@ const Login = () => {
 
         {/* Login Card */}
         <div className="w-full max-w-md bg-slate-card p-8 rounded-xl border border-slate-border shadow-2xl">
+          {error && (
+            <div className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded text-red-200 text-sm font-medium">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Username Field */}
             <div className="flex flex-col gap-2">

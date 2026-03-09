@@ -1,7 +1,6 @@
-import axios from 'axios';
-import { API_BASE_URL } from './api';
+import apiClient from './api';
 
 export const fetchLocations = async () => {
-    const response = await axios.get(`${API_BASE_URL}/locations`);
+    const response = await apiClient.get(`/locations`);
     return response.data;
 };

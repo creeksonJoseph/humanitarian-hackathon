@@ -6,11 +6,12 @@ from sqlalchemy import text as sql_text
 from . import db
 from .models import HazardReport, EmergencyJob, Rider, Location
 from .dispatch import notify_candidates
-from .auth import require_api_key
+from .auth import require_api_key, require_jwt, register_auth_routes
 from .schemas import HazardReportSchema, JobCreateSchema, RiderCheckinSchema, ClaimJobSchema
 from .errors import ApplicationError
 
 bp = Blueprint("api", __name__, url_prefix="/api")
+register_auth_routes(bp)
 
 
 # ---------------------------------------------------------------------------
@@ -66,6 +67,7 @@ def rider_checkin(phone):
 
 
 @bp.route("/riders/<phone>/verify", methods=["POST"])
+@require_jwt
 def verify_rider(phone):
     """Verify a rider from the Command Center and send SMS notification."""
     from .sms import send_sms
@@ -113,6 +115,7 @@ def claim_job(job_id):
 # ---------------------------------------------------------------------------
 
 @bp.route("/stats", methods=["GET"])
+@require_jwt
 def get_stats():
     """Live counter stats for the judge command-center dashboard."""
     place = request.args.get("place")
@@ -143,6 +146,7 @@ def get_stats():
 
 
 @bp.route("/hazards", methods=["GET"])
+@require_jwt
 def list_hazards():
     """Return all non-expired hazard reports, paginated, newest first."""
     place = request.args.get("place")
@@ -181,6 +185,7 @@ def list_hazards():
 
 
 @bp.route("/hazards/<int:hazard_id>/clear", methods=["POST"])
+@require_jwt
 def clear_hazard(hazard_id):
     """Admin override to manually clear a hazard."""
     hazard = db.session.get(HazardReport, hazard_id)
@@ -193,6 +198,7 @@ def clear_hazard(hazard_id):
 
 
 @bp.route("/sos", methods=["GET"])
+@require_jwt
 def list_sos():
     """Return the recent emergency jobs for the dashboard live feed, paginated."""
     tab = request.args.get("tab", "all")
@@ -238,6 +244,7 @@ def list_sos():
 
 
 @bp.route("/riders", methods=["GET"])
+@require_jwt
 def list_riders():
     """Return the rider roster, paginated."""
     tab = request.args.get("tab", "all")
@@ -286,6 +293,7 @@ def list_riders():
     })
 
 @bp.route("/locations", methods=["GET"])
+@require_jwt
 def list_locations():
     """Return all known locations (villages/stages) for filtering."""
     locations = Location.query.all()

@@ -13,22 +13,26 @@ import Sos from "./pages/Sos";
 import Login from "./pages/Login";
 import AppLayout from "./components/AppLayout";
 
+import ProtectedRoute from "./components/ProtectedRoute";
+
 function App() {
   return (
     <LocationProvider>
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route element={<AppLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/riders" element={<Riders />} />
-            <Route
-              path="/pending-verifications"
-              element={<PendingVerifications />}
-            />
-            <Route path="/hazards" element={<Hazards />} />
-            <Route path="/sos" element={<Sos />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/riders" element={<Riders />} />
+              <Route
+                path="/pending-verifications"
+                element={<PendingVerifications />}
+              />
+              <Route path="/hazards" element={<Hazards />} />
+              <Route path="/sos" element={<Sos />} />
+            </Route>
           </Route>
         </Routes>
       </Router>
