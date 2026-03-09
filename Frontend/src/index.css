@@ -21,8 +21,9 @@
 }
 
 @layer base {
+  *,
   body {
-    font-family: "Playfair Display", serif;
+    font-family: "Playfair Display", serif !important;
   }
   .font-oswald,
   .oswald,
@@ -30,6 +31,6 @@
   .font-display,
   .font-sans,
   .font-mono {
-    font-family: "Playfair Display", serif;
+    font-family: "Playfair Display", serif !important;
   }
 }
