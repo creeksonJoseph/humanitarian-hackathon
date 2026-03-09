@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
-
-// Note: Replace with actual backend API URL when available
-const API_BASE_URL = "http://localhost:8000/api";
+import { fetchRiders, verifyRider } from "../api/riders";
 
 export default function PendingVerifications() {
     const navigate = useNavigate();
@@ -12,17 +10,13 @@ export default function PendingVerifications() {
     const [verifyingId, setVerifyingId] = useState(null);
 
     // Fetch riders with `is_verified=false`
-    const fetchPendingRiders = async () => {
+    const loadPendingRiders = async () => {
         setIsLoading(true);
         try {
-            // Fetching all riders and filtering locally for now, 
-            // alternatively the backend could support `?verified=false`
-            const response = await fetch(`${API_BASE_URL}/riders?tab=all`);
-            if (!response.ok) throw new Error("Failed to fetch riders");
-            const data = await response.json();
+            // Fetching riders directly from backend
+            const response = await fetchRiders("pending", "", 1, 50);
             
-            // Filter riders who are explicitly not verified
-            const pending = data.filter(r => r.is_verified === false);
+            const pending = response.data || [];
             setPendingRiders(pending);
         } catch (error) {
             console.error("Error fetching pending riders:", error);
@@ -37,18 +31,14 @@ export default function PendingVerifications() {
     };
 
     useEffect(() => {
-        fetchPendingRiders();
+        loadPendingRiders();
     }, []);
 
     // Approve rider
-    const handleVerify = async (phone) => {
+    const handleVerifyClick = async (phone) => {
         setVerifyingId(phone);
         try {
-            const response = await fetch(`${API_BASE_URL}/riders/${encodeURIComponent(phone)}/verify`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" }
-            });
-            if (!response.ok) throw new Error("Verification failed");
+            await verifyRider(phone);
             
             // Remove rider from UI list after success
             setPendingRiders(prev => prev.filter(r => r.phone !== phone));
@@ -145,7 +135,7 @@ export default function PendingVerifications() {
                                                         <span className="material-symbols-outlined text-lg">call</span>
                                                     </button>
                                                     <button 
-                                                        onClick={() => handleVerify(rider.phone)}
+                                                        onClick={() => handleVerifyClick(rider.phone)}
                                                         disabled={verifyingId === rider.phone}
                                                         className={`px-4 py-2 ${verifyingId === rider.phone ? 'bg-emerald-600/50 text-emerald-200' : 'bg-emerald-600 text-white hover:bg-emerald-500'} text-xs font-bold rounded-lg transition-all flex items-center gap-2`}
                                                     >

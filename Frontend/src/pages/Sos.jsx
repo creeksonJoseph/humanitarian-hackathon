@@ -1,23 +1,31 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
-
-// Note: Replace with actual backend API URL when available
-const API_BASE_URL = "http://localhost:8000/api";
+import { fetchSos } from "../api/sos";
+import { fetchStats } from "../api/stats";
 
 export default function Sos() {
     const navigate = useNavigate();
     const [sosCalls, setSosCalls] = useState([]);
+    const [stats, setStats] = useState({ total_sos: 0, active_sos: 0 });
     const [isLoading, setIsLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
-    const fetchSosCalls = async () => {
+    const loadSosCalls = async () => {
         setIsLoading(true);
         try {
-            // Fetching all SOS calls (active and resolved)
-            const response = await fetch(`${API_BASE_URL}/sos?tab=all`);
-            if (!response.ok) throw new Error("Failed to fetch SOS calls");
-            const data = await response.json();
-            setSosCalls(data);
+            const [sosRes, statsRes] = await Promise.all([
+                // Fetching all SOS calls (active and resolved)
+                fetchSos("all", "", page, 50).catch(() => null),
+                fetchStats().catch(() => null)
+            ]);
+            
+            if (sosRes) {
+                setSosCalls(sosRes.data || []);
+                setTotalPages(sosRes.total_pages || 1);
+            }
+            if (statsRes) setStats(statsRes);
         } catch (error) {
             console.error("Error fetching SOS calls:", error);
             // Fallback mock data
@@ -32,8 +40,8 @@ export default function Sos() {
     };
 
     useEffect(() => {
-        fetchSosCalls();
-    }, []);
+        loadSosCalls();
+    }, [page]);
 
     // Helper function to format date
     const formatDate = (isoString) => {
@@ -94,11 +102,11 @@ export default function Sos() {
                     <div className="flex flex-wrap gap-4">
                         <div className="bg-card-dark border border-slate-700/50 rounded-xl px-5 py-3 min-w-[140px]">
                             <p className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Total Logs</p>
-                            <p className="text-2xl font-display text-white">{sosCalls.length}</p>
+                            <p className="text-2xl font-display text-white">{stats.total_sos}</p>
                         </div>
                         <div className="bg-card-dark border border-slate-700/50 rounded-xl px-5 py-3 min-w-[140px]">
                             <p className="text-rose-500 text-[10px] uppercase font-bold tracking-widest">Active SOS</p>
-                            <p className="text-2xl font-display text-white">{sosCalls.filter(s => s.status === 'BROADCASTING' || s.status === 'CLAIMED').length}</p>
+                            <p className="text-2xl font-display text-white">{stats.active_sos}</p>
                         </div>
                     </div>
                 </div>
@@ -162,6 +170,26 @@ export default function Sos() {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                    {/* Pagination Controls */}
+                    <div className="flex items-center justify-between border-t border-slate-700/50 px-6 py-4 bg-slate-800/20">
+                        <span className="text-sm text-slate-400">Page {page} of {totalPages}</span>
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1 || isLoading}
+                                className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors"
+                            >
+                                Previous
+                            </button>
+                            <button 
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page >= totalPages || isLoading}
+                                className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors"
+                            >
+                                Next
+                            </button>
+                        </div>
                     </div>
                 </div>
             </main>

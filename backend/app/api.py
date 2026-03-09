@@ -134,37 +134,49 @@ def get_stats():
             "total_sos": sos_query.count(),
             "available_riders": rider_query.filter_by(status="AVAILABLE").count(),
             "total_riders": rider_query.count(),
-            "active_hazards": active_hazards,
+            "pending_riders": rider_query.filter_by(is_verified=False).count(),
+            "active_hazards": hazard_query.filter(HazardReport.status.in_(["ACTIVE", "UNVERIFIED"])).count(),
+            "unverified_hazards": hazard_query.filter_by(status="UNVERIFIED").count(),
         }
     )
 
 
 @bp.route("/hazards", methods=["GET"])
 def list_hazards():
-    """Return all non-expired hazard reports, newest first."""
+    """Return all non-expired hazard reports, paginated, newest first."""
     place = request.args.get("place")
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 50, type=int)
     now = datetime.now(timezone.utc)
+    
     query = HazardReport.query.filter(HazardReport.status.in_(["ACTIVE", "UNVERIFIED"]), HazardReport.expires_at > now)
     
     if place:
         query = query.filter(HazardReport.route_description.contains(place))
         
-    hazards = query.order_by(HazardReport.reported_at.desc()).limit(50).all()
+    total_count = query.count()
+    total_pages = (total_count + limit - 1) // limit if total_count > 0 else 1
+    
+    hazards = query.order_by(HazardReport.reported_at.desc()).offset((page - 1) * limit).limit(limit).all()
 
-    return jsonify(
-        [
-            {
-                "id": h.id,
-                "hazard_type": h.hazard_type,
-                "route_description": h.route_description,
-                "reported_by_number": h.reported_by_number,
-                "status": h.status,
-                "reported_at": h.reported_at.isoformat() if h.reported_at else None,
-                "expires_at": h.expires_at.isoformat() if h.expires_at else None,
-            }
-            for h in hazards
-        ]
-    )
+    data = [
+        {
+            "id": h.id,
+            "hazard_type": h.hazard_type,
+            "route_description": h.route_description,
+            "reported_by_number": h.reported_by_number,
+            "status": h.status,
+            "reported_at": h.reported_at.isoformat() if h.reported_at else None,
+            "expires_at": h.expires_at.isoformat() if h.expires_at else None,
+        }
+        for h in hazards
+    ]
+    return jsonify({
+        "data": data,
+        "current_page": page,
+        "total_pages": total_pages,
+        "total_count": total_count
+    })
 
 
 @bp.route("/hazards/<int:hazard_id>/clear", methods=["POST"])
@@ -181,9 +193,11 @@ def clear_hazard(hazard_id):
 
 @bp.route("/sos", methods=["GET"])
 def list_sos():
-    """Return the recent emergency jobs for the dashboard live feed."""
+    """Return the recent emergency jobs for the dashboard live feed, paginated."""
     tab = request.args.get("tab", "all")
     place = request.args.get("place")
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 50, type=int)
     
     query = EmergencyJob.query
 
@@ -192,7 +206,10 @@ def list_sos():
     if place:
         query = query.filter_by(village_code=place)
 
-    jobs = query.order_by(EmergencyJob.created_at.desc()).limit(50).all()
+    total_count = query.count()
+    total_pages = (total_count + limit - 1) // limit if total_count > 0 else 1
+
+    jobs = query.order_by(EmergencyJob.created_at.desc()).offset((page - 1) * limit).limit(limit).all()
 
     result = []
     for job in jobs:
@@ -210,23 +227,37 @@ def list_sos():
             "rider_phone": job.assigned_rider,
             "time": job.created_at.isoformat() if job.created_at else None
         })
-    return jsonify(result)
+        
+    return jsonify({
+        "data": result,
+        "current_page": page,
+        "total_pages": total_pages,
+        "total_count": total_count
+    })
 
 
 @bp.route("/riders", methods=["GET"])
 def list_riders():
-    """Return the rider roster."""
+    """Return the rider roster, paginated."""
     tab = request.args.get("tab", "all")
     place = request.args.get("place")
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 50, type=int)
     
     query = Rider.query
 
     if tab == "available":
         query = query.filter_by(status="AVAILABLE")
+    elif tab == "pending":
+        query = query.filter_by(is_verified=False)
+        
     if place:
         query = query.filter_by(last_known_location_code=place)
 
-    riders = query.all()
+    total_count = query.count()
+    total_pages = (total_count + limit - 1) // limit if total_count > 0 else 1
+
+    riders = query.offset((page - 1) * limit).limit(limit).all()
     
     result = []
     for rider in riders:
@@ -239,7 +270,13 @@ def list_riders():
             "location_code": rider.last_known_location_code,
             "is_verified": rider.is_verified
         })
-    return jsonify(result)
+        
+    return jsonify({
+        "data": result,
+        "current_page": page,
+        "total_pages": total_pages,
+        "total_count": total_count
+    })
 
 @bp.route("/locations", methods=["GET"])
 def list_locations():

@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import Header from "../components/Header";
 import Stats from "../components/Stats";
-import SosFeed from "../components/SosFeed";
-import RiderRoster from "../components/RiderRoster";
 import Hazards from "../components/Hazards";
-
-const API_BASE = "http://localhost:8000/api";
+import { fetchStats } from "../api/stats";
+import { fetchSos } from "../api/sos";
+import { fetchRiders } from "../api/riders";
+import { fetchHazards, clearHazard } from "../api/hazards";
+import { fetchLocations } from "../api/locations";
 
 function Dashboard() {
     const [locations, setLocations] = useState([]);
@@ -25,29 +26,27 @@ function Dashboard() {
 
     const fetchData = useCallback(async () => {
         try {
-            const locParam = selectedLocation ? `?place=${selectedLocation}` : "";
-            
-            const [statsRes, sosRes, ridersRes, hazardsRes] = await Promise.all([
-                fetch(`${API_BASE}/stats${locParam}`),
-                fetch(`${API_BASE}/sos${locParam}`),
-                fetch(`${API_BASE}/riders${locParam}`),
-                fetch(`${API_BASE}/hazards${locParam}`),
+            const [statsData, sosData, ridersData, hazardsData] = await Promise.all([
+                fetchStats(selectedLocation).catch(() => null),
+                fetchSos("all", selectedLocation).catch(() => ({ data: [] })),
+                fetchRiders("all", selectedLocation).catch(() => ({ data: [] })),
+                fetchHazards(selectedLocation).catch(() => ({ data: [] }))
             ]);
 
-            if (statsRes.ok) setStats(await statsRes.json());
-            if (sosRes.ok) setSosFeed(await sosRes.json());
-            if (ridersRes.ok) setRiders(await ridersRes.json());
-            if (hazardsRes.ok) setHazards(await hazardsRes.json());
+            if (statsData) setStats(statsData);
+            if (sosData) setSosFeed(sosData.data || []);
+            if (ridersData) setRiders(ridersData.data || []);
+            if (hazardsData) setHazards(hazardsData.data || []);
             
         } catch (error) {
             console.error("Error fetching data:", error);
         }
     }, [selectedLocation]);
 
-    const fetchLocations = async () => {
+    const fetchLocationsList = async () => {
         try {
-            const res = await fetch(`${API_BASE}/locations`);
-            if (res.ok) setLocations(await res.json());
+            const res = await fetchLocations();
+            setLocations(res);
         } catch (error) {
             console.error(error);
         }
@@ -55,7 +54,7 @@ function Dashboard() {
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        fetchLocations();
+        fetchLocationsList();
     }, []);
 
     useEffect(() => {
@@ -67,7 +66,7 @@ function Dashboard() {
 
     const handleClearHazard = async (id) => {
         try {
-            await fetch(`${API_BASE}/hazards/${id}/clear`, { method: "POST" });
+            await clearHazard(id);
             fetchData();
         } catch (error) {
             console.error(error);

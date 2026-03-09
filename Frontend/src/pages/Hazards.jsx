@@ -1,23 +1,31 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
-
-// Note: Replace with actual backend API URL when available
-const API_BASE_URL = "http://localhost:8000/api";
+import { fetchHazards, clearHazard } from "../api/hazards";
+import { fetchStats } from "../api/stats";
 
 export default function Hazards() {
     const navigate = useNavigate();
     const [hazards, setHazards] = useState([]);
+    const [stats, setStats] = useState({ active_hazards: 0, unverified_hazards: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const [clearingId, setClearingId] = useState(null);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
-    const fetchHazards = async () => {
+    const loadHazards = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/hazards`);
-            if (!response.ok) throw new Error("Failed to fetch hazards");
-            const data = await response.json();
-            setHazards(data);
+            const [hazardsRes, statsRes] = await Promise.all([
+                fetchHazards("", page, 50).catch(() => null),
+                fetchStats().catch(() => null)
+            ]);
+            
+            if (hazardsRes) {
+                setHazards(hazardsRes.data || []);
+                setTotalPages(hazardsRes.total_pages || 1);
+            }
+            if (statsRes) setStats(statsRes);
         } catch (error) {
             console.error("Error fetching hazards:", error);
             // Fallback mock data
@@ -31,17 +39,13 @@ export default function Hazards() {
     };
 
     useEffect(() => {
-        fetchHazards();
-    }, []);
+        loadHazards();
+    }, [page]);
 
     const handleClearHazard = async (id) => {
         setClearingId(id);
         try {
-            const response = await fetch(`${API_BASE_URL}/hazards/${id}/clear`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" }
-            });
-            if (!response.ok) throw new Error("Failed to clear hazard");
+            await clearHazard(id);
             
             // Remove the cleared hazard from the local state
             setHazards(prev => prev.filter(h => h.id !== id));
@@ -99,11 +103,11 @@ export default function Hazards() {
                     <div className="flex flex-wrap gap-4">
                         <div className="bg-card-dark border border-slate-700/50 rounded-xl px-5 py-3 min-w-[140px]">
                             <p className="text-rose-500 text-[10px] uppercase font-bold tracking-widest">Active Hazards</p>
-                            <p className="text-2xl font-display text-white">{hazards.length}</p>
+                            <p className="text-2xl font-display text-white">{stats.active_hazards}</p>
                         </div>
                         <div className="bg-card-dark border border-slate-700/50 rounded-xl px-5 py-3 min-w-[140px]">
                             <p className="text-amber-500 text-[10px] uppercase font-bold tracking-widest">Unverified Reports</p>
-                            <p className="text-2xl font-display text-white">{hazards.filter(h => h.status === 'UNVERIFIED').length}</p>
+                            <p className="text-2xl font-display text-white">{stats.unverified_hazards}</p>
                         </div>
                     </div>
                 </div>
@@ -180,6 +184,26 @@ export default function Hazards() {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                    {/* Pagination Controls */}
+                    <div className="flex items-center justify-between border-t border-slate-700/50 px-6 py-4 bg-slate-800/20">
+                        <span className="text-sm text-slate-400">Page {page} of {totalPages}</span>
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1 || isLoading}
+                                className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors"
+                            >
+                                Previous
+                            </button>
+                            <button 
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page >= totalPages || isLoading}
+                                className="px-4 py-2 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors"
+                            >
+                                Next
+                            </button>
+                        </div>
                     </div>
                 </div>
             </main>
