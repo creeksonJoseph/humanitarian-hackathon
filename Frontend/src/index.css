@@ -1,10 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #ea1a1a;
+  --color-primary: #dc2626;
   --color-background-light: #f8f6f6;
   --color-background-dark: #0f172a;
-  --color-slate-panel: #1e293b;
+  --color-slate-card: #1e293b;
+  --color-slate-input: #0f172a;
+  --color-slate-border: #334155;
 
   --font-display: "Inter", sans-serif;
   --font-oswald: "Oswald", sans-serif;
@@ -16,10 +18,10 @@
 }
 
 @layer base {
-    body {
-        font-family: 'Inter', sans-serif;
-    }
-    .oswald {
-        font-family: 'Oswald', sans-serif;
-    }
+  body {
+    font-family: "Inter", sans-serif;
+  }
+  .font-oswald {
+    font-family: "Oswald", sans-serif;
+  }
 }
