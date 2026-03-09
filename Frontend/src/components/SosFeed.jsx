@@ -5,7 +5,7 @@ export default function SosFeed({ sos, isLoading }) {
 
     if (isLoading) {
         return (
-            <section className="bg-slate-panel rounded-xl overflow-hidden border border-slate-700">
+            <section className="bg-slate-panel overflow-hidden border border-slate-700">
                 <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
                     <h2 className="oswald text-xl font-semibold tracking-wide flex items-center gap-2">
                         <span className="material-symbols-outlined text-primary">rss_feed</span>
@@ -28,7 +28,7 @@ export default function SosFeed({ sos, isLoading }) {
 
     if (sos.length === 0) {
         return (
-            <section className="bg-slate-panel rounded-xl overflow-hidden border border-slate-700">
+            <section className="bg-slate-panel overflow-hidden border border-slate-700">
                 <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
                     <h2 className="oswald text-xl font-semibold tracking-wide flex items-center gap-2">
                         <span className="material-symbols-outlined text-primary">rss_feed</span>
@@ -50,7 +50,7 @@ export default function SosFeed({ sos, isLoading }) {
     }
 
     return (
-        <section className="bg-slate-panel rounded-xl overflow-hidden border border-slate-700 flex flex-col">
+        <section className="bg-slate-panel overflow-hidden border border-slate-700 flex flex-col">
             <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
                 <h2 className="oswald text-xl font-semibold tracking-wide flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">rss_feed</span>

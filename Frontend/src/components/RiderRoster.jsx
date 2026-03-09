@@ -5,7 +5,7 @@ export default function RiderRoster({ riders, isLoading }) {
 
   if (isLoading) {
     return (
-      <section className="bg-slate-panel rounded-xl overflow-hidden border border-slate-700">
+      <section className="bg-slate-panel overflow-hidden border border-slate-700">
         <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
           <h2 className="oswald text-xl font-semibold tracking-wide flex items-center gap-2">
             <span className="material-symbols-outlined text-emerald-500">
@@ -35,7 +35,7 @@ export default function RiderRoster({ riders, isLoading }) {
 
   if (riders.length === 0) {
     return (
-      <section className="bg-slate-panel rounded-xl overflow-hidden border border-slate-700">
+      <section className="bg-slate-panel overflow-hidden border border-slate-700">
         <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
           <h2 className="oswald text-xl font-semibold tracking-wide flex items-center gap-2">
             <span className="material-symbols-outlined text-emerald-500">
@@ -68,7 +68,7 @@ export default function RiderRoster({ riders, isLoading }) {
   }
 
   return (
-    <section className="bg-slate-panel rounded-xl overflow-hidden border border-slate-700 flex flex-col">
+    <section className="bg-slate-panel overflow-hidden border border-slate-700 flex flex-col">
       <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
         <h2 className="oswald text-xl font-semibold tracking-wide flex items-center gap-2">
           <span className="material-symbols-outlined text-emerald-500">

@@ -11,7 +11,7 @@
   --color-slate-input: #0f172a;
   --color-slate-border: #334155;
 
-  --font-display: "Inter", sans-serif;
+  --font-display: "Playfair Display", serif;
   --font-oswald: "Oswald", sans-serif;
 
   --radius-DEFAULT: 0.125rem;
@@ -22,9 +22,14 @@
 
 @layer base {
   body {
-    font-family: "Inter", sans-serif;
+    font-family: "Playfair Display", serif;
   }
-  .font-oswald {
-    font-family: "Oswald", sans-serif;
+  .font-oswald,
+  .oswald,
+  .font-body,
+  .font-display,
+  .font-sans,
+  .font-mono {
+    font-family: "Playfair Display", serif;
   }
 }

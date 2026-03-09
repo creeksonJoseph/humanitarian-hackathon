@@ -1,7 +1,7 @@
 export default function Stats({ stats }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-red-600 rounded-xl p-6 shadow-lg shadow-red-900/20 border border-red-500/30">
+            <div className="bg-red-600 p-6 shadow-lg shadow-red-900/20 border border-red-500/30">
                 <div className="flex justify-between items-start">
                     <div>
                         <p className="text-red-100 text-sm font-medium uppercase tracking-wider oswald">Active SOS Jobs</p>
@@ -15,7 +15,7 @@ export default function Stats({ stats }) {
                 </div>
             </div>
             
-            <div className="bg-emerald-500 rounded-xl p-6 shadow-lg shadow-emerald-900/20 border border-emerald-400/30">
+            <div className="bg-emerald-500 p-6 shadow-lg shadow-emerald-900/20 border border-emerald-400/30">
                 <div className="flex justify-between items-start">
                     <div>
                         <p className="text-emerald-50 text-sm font-medium uppercase tracking-wider oswald">Available Riders</p>
@@ -29,7 +29,7 @@ export default function Stats({ stats }) {
                 </div>
             </div>
 
-            <div className="bg-amber-500 rounded-xl p-6 shadow-lg shadow-amber-900/20 border border-amber-400/30">
+            <div className="bg-amber-500 p-6 shadow-lg shadow-amber-900/20 border border-amber-400/30">
                 <div className="flex justify-between items-start">
                     <div>
                         <p className="text-amber-50 text-sm font-medium uppercase tracking-wider oswald">Active Hazards</p>
@@ -43,7 +43,7 @@ export default function Stats({ stats }) {
                 </div>
             </div>
 
-            <div className="bg-slate-panel rounded-xl p-6 shadow-lg border border-slate-700">
+            <div className="bg-slate-panel p-6 shadow-lg border border-slate-700">
                 <div className="flex justify-between items-start">
                     <div>
                         <p className="text-slate-400 text-sm font-medium uppercase tracking-wider oswald">Total Riders</p>

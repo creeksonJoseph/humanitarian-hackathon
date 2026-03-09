@@ -19,6 +19,10 @@ def require_api_key(func):
 def require_jwt(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
+        # Allow CORS preflight requests to pass through without a token
+        if request.method == "OPTIONS":
+            return func(*args, **kwargs)
+
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
             raise ApplicationError(status_code=401, code="unauthorized", message="Missing or invalid Authorization header")

@@ -5,7 +5,7 @@ export default function Hazards({ hazards, handleClear, isLoading }) {
 
     if (isLoading) {
         return (
-            <section className="bg-slate-panel rounded-xl overflow-hidden border border-slate-700 flex flex-col">
+            <section className="bg-slate-panel overflow-hidden border border-slate-700 flex flex-col">
                 <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
                     <h2 className="oswald text-xl font-semibold tracking-wide flex items-center gap-2 text-amber-500">
                         <span className="material-symbols-outlined">warning</span>
@@ -29,7 +29,7 @@ export default function Hazards({ hazards, handleClear, isLoading }) {
 
     if (hazards.length === 0) {
         return (
-            <section className="bg-slate-panel rounded-xl overflow-hidden border border-slate-700 flex flex-col">
+            <section className="bg-slate-panel overflow-hidden border border-slate-700 flex flex-col">
                 <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
                     <h2 className="oswald text-xl font-semibold tracking-wide flex items-center gap-2 text-amber-500">
                         <span className="material-symbols-outlined">warning</span>
@@ -52,7 +52,7 @@ export default function Hazards({ hazards, handleClear, isLoading }) {
     }
 
     return (
-        <section className="bg-slate-panel rounded-xl overflow-hidden border border-slate-700 flex flex-col">
+        <section className="bg-slate-panel overflow-hidden border border-slate-700 flex flex-col">
             <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
                 <h2 className="oswald text-xl font-semibold tracking-wide flex items-center gap-2 text-amber-500">
                     <span className="material-symbols-outlined">warning</span>
@@ -62,7 +62,7 @@ export default function Hazards({ hazards, handleClear, isLoading }) {
             </div>
             <div className="p-6 space-y-4 flex-1 overflow-y-auto">
                 {displayHazards.map(hazard => (
-                    <div key={hazard.id} className="p-4 rounded-lg bg-slate-800 border-l-4 border-amber-500 space-y-3">
+                    <div key={hazard.id} className="p-4 bg-slate-800 border-l-4 border-amber-500 space-y-3">
                         <div className="flex justify-between items-start">
                             <div>
                                 <p className="text-[10px] text-amber-500 font-bold uppercase oswald">#{hazard.id} - {hazard.status}</p>
