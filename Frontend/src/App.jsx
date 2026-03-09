@@ -5,18 +5,21 @@ import Riders from "./pages/Riders";
 import PendingVerifications from "./pages/PendingVerifications";
 import Hazards from "./pages/Hazards";
 import Sos from "./pages/Sos";
+import AppLayout from "./components/AppLayout";
 
 function App() {
     return (
         <LocationProvider>
             <Router>
                 <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/riders" element={<Riders />} />
-                <Route path="/pending-verifications" element={<PendingVerifications />} />
-                <Route path="/hazards" element={<Hazards />} />
-                <Route path="/sos" element={<Sos />} />
-            </Routes>
+                    <Route element={<AppLayout />}>
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/riders" element={<Riders />} />
+                        <Route path="/pending-verifications" element={<PendingVerifications />} />
+                        <Route path="/hazards" element={<Hazards />} />
+                        <Route path="/sos" element={<Sos />} />
+                    </Route>
+                </Routes>
             </Router>
         </LocationProvider>
     );

@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import { fetchHazards, clearHazard } from "../api/hazards";
 import { fetchStats } from "../api/stats";
 import { useLocation } from "../context/LocationContext";
 
 export default function Hazards() {
-    const navigate = useNavigate();
     const { selectedLocation } = useLocation();
     const [hazards, setHazards] = useState([]);
     const [stats, setStats] = useState({ active_hazards: 0, unverified_hazards: 0 });
@@ -45,10 +43,11 @@ export default function Hazards() {
     }, [selectedLocation]);
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
         loadHazards();
         const interval = setInterval(loadHazards, 5000);
         return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page, selectedLocation]);
 
     const handleClearHazard = async (id) => {
@@ -97,15 +96,9 @@ export default function Hazards() {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
-                             <button 
-                                onClick={() => navigate('/')}
-                                className="text-slate-400 hover:text-white transition-colors"
-                            >
-                                <span className="material-symbols-outlined">arrow_back</span>
-                            </button>
                             <h1 className="text-4xl font-display uppercase font-bold text-white tracking-tight">Active Hazards</h1>
                         </div>
-                        <p className="text-slate-400 mt-1 font-body ml-10">Monitor and clear reported obstacles and dangerous routes.</p>
+                        <p className="text-slate-400 mt-1 font-body">Monitor and clear reported obstacles and dangerous routes.</p>
                     </div>
 
                     {/* KPI Bar */}

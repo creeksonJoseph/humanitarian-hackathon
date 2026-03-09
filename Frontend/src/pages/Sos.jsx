@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import { fetchSos } from "../api/sos";
 import { fetchStats } from "../api/stats";
 import { useLocation } from "../context/LocationContext";
 
 export default function Sos() {
-    const navigate = useNavigate();
     const { selectedLocation } = useLocation();
     const [sosCalls, setSosCalls] = useState([]);
     const [stats, setStats] = useState({ total_sos: 0, active_sos: 0 });
@@ -46,9 +44,11 @@ export default function Sos() {
     }, [selectedLocation]);
 
     useEffect(() => {
+         
         loadSosCalls();
         const interval = setInterval(loadSosCalls, 5000);
         return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page, selectedLocation]);
 
     // Helper function to format date
@@ -95,15 +95,9 @@ export default function Sos() {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
-                             <button 
-                                onClick={() => navigate('/')}
-                                className="text-slate-400 hover:text-white transition-colors"
-                            >
-                                <span className="material-symbols-outlined">arrow_back</span>
-                            </button>
-                            <h1 className="text-4xl font-display uppercase font-bold text-white tracking-tight">SOS Directory</h1>
+                            <h1 className="text-4xl font-display uppercase font-bold text-white tracking-tight">SOS Requests feed</h1>
                         </div>
-                        <p className="text-slate-400 mt-1 font-body ml-10">Complete historical and active record of emergency calls.</p>
+                        <p className="text-slate-400 mt-1 font-body">Monitor and act on emergency assistance requests from affected areas.</p>
                     </div>
 
                     {/* KPI Bar */}

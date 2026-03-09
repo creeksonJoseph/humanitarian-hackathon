@@ -42,9 +42,11 @@ export default function Riders() {
     }, [activeTab, searchQuery, selectedLocation]);
 
     useEffect(() => {
+         
         loadData();
         const interval = setInterval(loadData, 5000);
         return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page, activeTab, searchQuery, selectedLocation]);
     return (
         <div className="layout-container flex flex-col min-h-screen">

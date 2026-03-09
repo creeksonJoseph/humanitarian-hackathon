@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import { fetchRiders, verifyRider } from "../api/riders";
 import { useLocation } from "../context/LocationContext";
 
 export default function PendingVerifications() {
-    const navigate = useNavigate();
     const { selectedLocation } = useLocation();
     const [pendingRiders, setPendingRiders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -33,9 +31,11 @@ export default function PendingVerifications() {
     };
 
     useEffect(() => {
+         
         loadPendingRiders();
         const interval = setInterval(loadPendingRiders, 5000);
         return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedLocation]);
 
     // Approve rider
@@ -64,15 +64,9 @@ export default function PendingVerifications() {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
-                            <button 
-                                onClick={() => navigate('/riders')}
-                                className="text-slate-400 hover:text-white transition-colors"
-                            >
-                                <span className="material-symbols-outlined">arrow_back</span>
-                            </button>
                             <h1 className="text-4xl font-display uppercase font-bold text-white tracking-tight">Pending Verifications</h1>
                         </div>
-                        <p className="text-slate-400 mt-1 font-body ml-10">Review and approve self-registered riders from USSD before they can receive SOS assignments.</p>
+                        <p className="text-slate-400 mt-1 font-body">Review and approve self-registered riders from USSD before they can receive SOS assignments.</p>
                     </div>
 
                     {/* KPI Bar */}
