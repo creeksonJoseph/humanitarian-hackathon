@@ -47,3 +47,7 @@ Thumbs.db
 # Old files
 README_OLD.md
 
+# Database patch script
+patch_db.py
+patchdb.py
+
