@@ -11,8 +11,12 @@ export default function Hazards() {
     const [clearingId, setClearingId] = useState(null);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [lastFetch, setLastFetch] = useState(0);
 
     const loadHazards = async () => {
+        const now = Date.now();
+        if (now - lastFetch < 2000) return;
+        
         setIsLoading(true);
         try {
             const [hazardsRes, statsRes] = await Promise.all([
@@ -25,9 +29,9 @@ export default function Hazards() {
                 setTotalPages(hazardsRes.total_pages || 1);
             }
             if (statsRes) setStats(statsRes);
+            setLastFetch(now);
         } catch (error) {
             console.error("Error fetching hazards:", error);
-            // Fallback mock data
             setHazards([
                 { id: 101, hazard_type: "FLOOD", route_description: "Ekerenyo Main Bridge (4050)", reported_by_number: "+251 911 234 567", status: "ACTIVE", reported_at: new Date().toISOString() },
                 { id: 102, hazard_type: "ROAD_BLOCK", route_description: "Nyamira South Pass (4020)", reported_by_number: "+251 912 883 291", status: "UNVERIFIED", reported_at: new Date(Date.now() - 3600000).toISOString() }
@@ -42,7 +46,6 @@ export default function Hazards() {
     }, [selectedLocation]);
 
     useEffect(() => {
-         
         loadHazards();
         const interval = setInterval(loadHazards, 30000);
         return () => clearInterval(interval);

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { fetchRiders } from "../api/riders";
 import { fetchStats } from "../api/stats";
 import { useLocation } from "../context/LocationContext";
+import { useDebounce } from "../hooks/useDebounce";
 
 export default function Riders() {
     const navigate = useNavigate();
@@ -14,12 +15,13 @@ export default function Riders() {
     const [totalPages, setTotalPages] = useState(1);
     const [activeTab, setActiveTab] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
+    const debouncedSearch = useDebounce(searchQuery, 500);
 
     const loadData = async () => {
         setIsLoading(true);
         try {
             const [ridersRes, statsRes] = await Promise.all([
-                fetchRiders(activeTab, selectedLocation, searchQuery, page, 50).catch(() => null),
+                fetchRiders(activeTab, selectedLocation, debouncedSearch, page, 50).catch(() => null),
                 fetchStats(selectedLocation).catch(() => null)
             ]);
 
@@ -35,18 +37,16 @@ export default function Riders() {
         }
     };
 
-    // Reset pagination when filter changes
     useEffect(() => {
         setPage(1);
-    }, [activeTab, searchQuery, selectedLocation]);
+    }, [activeTab, debouncedSearch, selectedLocation]);
 
     useEffect(() => {
-         
         loadData();
         const interval = setInterval(loadData, 30000);
         return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [page, activeTab, searchQuery, selectedLocation]);
+    }, [page, activeTab, debouncedSearch, selectedLocation]);
     return (
         <div className="layout-container flex flex-col min-h-screen">
             <main className="flex-1 p-6 max-w-7xl mx-auto w-full">

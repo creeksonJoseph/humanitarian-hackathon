@@ -24,8 +24,12 @@ function Dashboard() {
   const [riders, setRiders] = useState([]);
   const [hazards, setHazards] = useState([]);
   const [isLoadingRiders, setIsLoadingRiders] = useState(true);
+  const [lastFetch, setLastFetch] = useState(0);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (force = false) => {
+    const now = Date.now();
+    if (!force && now - lastFetch < 5000) return;
+    
     setIsLoadingRiders(true);
     try {
       const [statsData, sosData, ridersData, hazardsData] = await Promise.all([
@@ -40,23 +44,24 @@ function Dashboard() {
       if (ridersData) setRiders(ridersData.data || []);
       if (hazardsData) setHazards(hazardsData.data || []);
 
+      setLastFetch(now);
       setIsLoadingRiders(false);
     } catch (error) {
       console.error("Error fetching data:", error);
       setIsLoadingRiders(false);
     }
-  }, [selectedLocation]);
+  }, [selectedLocation, lastFetch]);
+  
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchData();
-    const interval = setInterval(fetchData, 30000); // Changed from 5000ms to 30000ms (30 seconds)
+    fetchData(true);
+    const interval = setInterval(() => fetchData(true), 30000);
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [selectedLocation]);
 
   const handleClearHazard = async (id) => {
     try {
       await clearHazard(id);
-      fetchData();
+      fetchData(true);
     } catch (error) {
       console.error(error);
     }

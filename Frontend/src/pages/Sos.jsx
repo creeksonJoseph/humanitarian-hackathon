@@ -10,12 +10,15 @@ export default function Sos() {
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [lastFetch, setLastFetch] = useState(0);
 
     const loadSosCalls = async () => {
+        const now = Date.now();
+        if (now - lastFetch < 2000) return;
+        
         setIsLoading(true);
         try {
             const [sosRes, statsRes] = await Promise.all([
-                // Fetching all SOS calls (active and resolved)
                 fetchSos("all", selectedLocation, page, 50).catch(() => null),
                 fetchStats(selectedLocation).catch(() => null)
             ]);
@@ -25,9 +28,9 @@ export default function Sos() {
                 setTotalPages(sosRes.total_pages || 1);
             }
             if (statsRes) setStats(statsRes);
+            setLastFetch(now);
         } catch (error) {
             console.error("Error fetching SOS calls:", error);
-            // Fallback mock data
             setSosCalls([
                 { id: 1001, caller: "+251 911 234 567", type: "MATERNITY", status: "BROADCASTING", village: "Ekerenyo Phase 2", village_code: "4050", assigned_rider: null, rider_phone: null, time: new Date().toISOString() },
                 { id: 1002, caller: "+251 912 883 291", type: "INJURY", status: "CLAIMED", village: "Nyamira South", village_code: "4020", assigned_rider: "Abel Mulugeta", rider_phone: "+251 988 123 456", time: new Date(Date.now() - 1800000).toISOString() },
@@ -43,7 +46,6 @@ export default function Sos() {
     }, [selectedLocation]);
 
     useEffect(() => {
-         
         loadSosCalls();
         const interval = setInterval(loadSosCalls, 30000);
         return () => clearInterval(interval);

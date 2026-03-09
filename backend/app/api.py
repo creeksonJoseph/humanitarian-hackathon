@@ -128,7 +128,7 @@ def get_stats():
     if place:
         sos_query = sos_query.filter_by(village_code=place)
         rider_query = rider_query.filter_by(last_known_location_code=place)
-        hazard_query = hazard_query.filter(HazardReport.route_description.ilike(f"%{place}%"))
+        hazard_query = hazard_query.filter(HazardReport.route_description.contains(place))
 
     active_hazards = hazard_query.filter(HazardReport.status.in_(["ACTIVE", "UNVERIFIED"])).count()
 
@@ -157,7 +157,7 @@ def list_hazards():
     query = HazardReport.query.filter(HazardReport.status.in_(["ACTIVE", "UNVERIFIED"]), HazardReport.expires_at > now_naive)
     
     if place:
-        query = query.filter(HazardReport.route_description.ilike(f"%{place}%"))
+        query = query.filter(HazardReport.route_description.contains(place))
         
     total_count = query.count()
     total_pages = (total_count + limit - 1) // limit if total_count > 0 else 1
@@ -201,12 +201,14 @@ def clear_hazard(hazard_id):
 @require_jwt
 def list_sos():
     """Return the recent emergency jobs for the dashboard live feed, paginated."""
+    from sqlalchemy.orm import joinedload
+    
     tab = request.args.get("tab", "all")
     place = request.args.get("place")
     page = request.args.get("page", 1, type=int)
     limit = request.args.get("limit", 50, type=int)
     
-    query = EmergencyJob.query
+    query = EmergencyJob.query.options(joinedload(EmergencyJob.village), joinedload(EmergencyJob.rider))
 
     if tab == "active":
         query = query.filter(EmergencyJob.status.in_(["BROADCASTING", "CLAIMED"]))
@@ -218,22 +220,17 @@ def list_sos():
 
     jobs = query.order_by(EmergencyJob.created_at.desc()).offset((page - 1) * limit).limit(limit).all()
 
-    result = []
-    for job in jobs:
-        loc = db.session.get(Location, job.village_code)
-        rider = db.session.get(Rider, job.assigned_rider) if job.assigned_rider else None
-        
-        result.append({
-            "id": job.job_id,
-            "caller": job.caller_number,
-            "type": job.emergency_type,
-            "status": job.status,
-            "village": loc.name if loc else job.village_code,
-            "village_code": job.village_code,
-            "assigned_rider": rider.name if rider else job.assigned_rider,
-            "rider_phone": job.assigned_rider,
-            "time": job.created_at.isoformat() if job.created_at else None
-        })
+    result = [{
+        "id": job.job_id,
+        "caller": job.caller_number,
+        "type": job.emergency_type,
+        "status": job.status,
+        "village": job.village.name if job.village else job.village_code,
+        "village_code": job.village_code,
+        "assigned_rider": job.rider.name if job.rider else job.assigned_rider,
+        "rider_phone": job.assigned_rider,
+        "time": job.created_at.isoformat() if job.created_at else None
+    } for job in jobs]
         
     return jsonify({
         "data": result,
@@ -247,13 +244,15 @@ def list_sos():
 @require_jwt
 def list_riders():
     """Return the rider roster, paginated."""
+    from sqlalchemy.orm import joinedload
+    
     tab = request.args.get("tab", "all")
     place = request.args.get("place")
     search = request.args.get("search")
     page = request.args.get("page", 1, type=int)
     limit = request.args.get("limit", 50, type=int)
     
-    query = Rider.query
+    query = Rider.query.options(joinedload(Rider.last_known_location))
 
     if tab == "available":
         query = query.filter_by(status="AVAILABLE")
@@ -273,17 +272,14 @@ def list_riders():
 
     riders = query.offset((page - 1) * limit).limit(limit).all()
     
-    result = []
-    for rider in riders:
-        loc = db.session.get(Location, rider.last_known_location_code)
-        result.append({
-            "phone": rider.phone_number,
-            "name": rider.name,
-            "status": rider.status,
-            "current_location": loc.name if loc else rider.last_known_location_code,
-            "location_code": rider.last_known_location_code,
-            "is_verified": rider.is_verified
-        })
+    result = [{
+        "phone": rider.phone_number,
+        "name": rider.name,
+        "status": rider.status,
+        "current_location": rider.last_known_location.name if rider.last_known_location else rider.last_known_location_code,
+        "location_code": rider.last_known_location_code,
+        "is_verified": rider.is_verified
+    } for rider in riders]
         
     return jsonify({
         "data": result,
