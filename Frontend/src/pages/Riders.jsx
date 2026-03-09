@@ -43,7 +43,7 @@ export default function Riders() {
     useEffect(() => {
          
         loadData();
-        const interval = setInterval(loadData, 5000);
+        const interval = setInterval(loadData, 30000);
         return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page, activeTab, searchQuery, selectedLocation]);

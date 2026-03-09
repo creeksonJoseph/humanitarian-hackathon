@@ -45,7 +45,7 @@ export default function Sos() {
     useEffect(() => {
          
         loadSosCalls();
-        const interval = setInterval(loadSosCalls, 5000);
+        const interval = setInterval(loadSosCalls, 30000);
         return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page, selectedLocation]);

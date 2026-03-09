@@ -32,7 +32,7 @@ export default function PendingVerifications() {
     useEffect(() => {
          
         loadPendingRiders();
-        const interval = setInterval(loadPendingRiders, 5000);
+        const interval = setInterval(loadPendingRiders, 30000);
         return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedLocation]);

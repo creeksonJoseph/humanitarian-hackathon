@@ -1,10 +1,13 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary: #dc2626;
   --color-background-light: #f8f6f6;
   --color-background-dark: #0f172a;
   --color-slate-card: #1e293b;
+  --color-slate-panel: #1e293b;
   --color-slate-input: #0f172a;
   --color-slate-border: #334155;
 

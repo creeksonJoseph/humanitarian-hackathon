@@ -1,7 +1,31 @@
 import { Link } from "react-router-dom";
 
-export default function Hazards({ hazards, handleClear }) {
+export default function Hazards({ hazards, handleClear, isLoading }) {
     const displayHazards = hazards.slice(0, 5);
+
+    if (isLoading) {
+        return (
+            <section className="bg-slate-panel rounded-xl overflow-hidden border border-slate-700 flex flex-col">
+                <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
+                    <h2 className="oswald text-xl font-semibold tracking-wide flex items-center gap-2 text-amber-500">
+                        <span className="material-symbols-outlined">warning</span>
+                        ACTIVE HAZARDS
+                    </h2>
+                    <span className="bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded text-xs font-bold">...</span>
+                </div>
+                <div className="p-6 text-center space-y-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500 mx-auto"></div>
+                    <p className="text-slate-500 text-sm">Loading hazards...</p>
+                </div>
+                <div className="p-4 border-t border-slate-700 flex justify-center bg-slate-800/30 w-full">
+                    <Link to="/hazards" className="text-sm font-medium text-amber-500 hover:text-amber-400 uppercase tracking-wide flex items-center gap-1 transition-colors">
+                        View All Hazards
+                        <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                    </Link>
+                </div>
+            </section>
+        );
+    }
 
     if (hazards.length === 0) {
         return (

@@ -68,11 +68,11 @@ function Dashboard() {
         <Stats stats={stats} />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <SosFeed sos={sosFeed} />
+            <SosFeed sos={sosFeed} isLoading={isLoadingRiders} />
             <RiderRoster riders={riders} isLoading={isLoadingRiders} />
           </div>
           <aside className="space-y-6">
-            <Hazards hazards={hazards} handleClear={handleClearHazard} />
+            <Hazards hazards={hazards} handleClear={handleClearHazard} isLoading={isLoadingRiders} />
           </aside>
         </div>
       </main>

@@ -1,7 +1,30 @@
 import { Link } from "react-router-dom";
 
-export default function SosFeed({ sos }) {
+export default function SosFeed({ sos, isLoading }) {
     const displaySos = sos.slice(0, 5);
+
+    if (isLoading) {
+        return (
+            <section className="bg-slate-panel rounded-xl overflow-hidden border border-slate-700">
+                <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
+                    <h2 className="oswald text-xl font-semibold tracking-wide flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary">rss_feed</span>
+                        SOS FEED SECTION
+                    </h2>
+                </div>
+                <div className="p-6 text-center space-y-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    <p className="text-slate-500 text-sm">Loading SOS calls...</p>
+                </div>
+                <div className="px-6 py-4 border-t border-slate-700 flex justify-center bg-slate-800/30 w-full">
+                    <Link to="/sos" className="text-sm font-medium text-primary hover:text-red-400 uppercase tracking-wide flex items-center gap-1 transition-colors">
+                        View All SOS Requests
+                        <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                    </Link>
+                </div>
+            </section>
+        );
+    }
 
     if (sos.length === 0) {
         return (

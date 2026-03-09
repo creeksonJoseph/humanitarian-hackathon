@@ -63,11 +63,10 @@ def notify_candidates(job: EmergencyJob, surge: bool = False) -> list:
             .all()
         )
     else:
-        # Wave 1: local riders first
+        # Wave 1: local riders first (no maximum limit, alert everyone locally)
         local_riders = (
             Rider.query
             .filter_by(status="AVAILABLE", last_known_location_code=job.village_code)
-            .limit(LOCAL_BLAST_LIMIT)
             .all()
         )
         if len(local_riders) < LOCAL_BLAST_LIMIT:
@@ -76,7 +75,7 @@ def notify_candidates(job: EmergencyJob, surge: bool = False) -> list:
                 Rider.query
                 .filter(
                     Rider.status == "AVAILABLE",
-                    Rider.phone_number.notin_(local_phones),
+                    Rider.phone_number.notin_(local_phones) if local_phones else True,
                 )
                 .limit(LOCAL_BLAST_LIMIT - len(local_riders))
                 .all()
@@ -86,12 +85,13 @@ def notify_candidates(job: EmergencyJob, surge: bool = False) -> list:
             candidates = local_riders
 
     messages = []
-    for rider in candidates:
-        send_sms(rider.phone_number, msg)
-        messages.append((rider.phone_number, msg))
-        logger.info("SOS broadcast sent to %s for job %s (surge=%s)", rider.phone_number, job.job_id, surge)
-
-    if not candidates:
+    if candidates:
+        phones = [rider.phone_number for rider in candidates]
+        send_sms(phones, msg)
+        for phone in phones:
+            messages.append((phone, msg))
+            logger.info("SOS broadcast sent to %s for job %s (surge=%s)", phone, job.job_id, surge)
+    else:
         logger.warning("notify_candidates: no available riders for job %s (surge=%s)", job.job_id, surge)
 
     return messages

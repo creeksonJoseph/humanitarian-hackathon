@@ -8,7 +8,7 @@ import logging
 logger = logging.getLogger("app.sms.at_client")
 
 
-def send_sms(number: str, message: str, *, username: str, api_key: str, sender_id: str = None) -> bool:
+def send_sms(number, message: str, *, username: str, api_key: str, sender_id: str = None) -> bool:
     """Send an SMS via the Africa's Talking SDK."""
     try:
         import africastalking  # type: ignore[import]
@@ -20,13 +20,16 @@ def send_sms(number: str, message: str, *, username: str, api_key: str, sender_i
 
     africastalking.initialize(username, api_key)
     sms = africastalking.SMS
+    
+    recipients = [number] if isinstance(number, str) else number
+    
     try:
         kwargs = {}
         if sender_id:
             kwargs["sender_id"] = sender_id
-        response = sms.send(message, [number], **kwargs)
-        logger.info("AT SMS sent to %s: %s", number, response)
+        response = sms.send(message, recipients, **kwargs)
+        logger.info("AT SMS sent to %s: %s", recipients, response)
         return True
     except Exception:
-        logger.exception("Africa's Talking SMS failed for %s", number)
+        logger.exception("Africa's Talking SMS failed for %s", recipients)
         return False

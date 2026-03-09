@@ -12,8 +12,8 @@ import logging
 logger = logging.getLogger("app.sms")
 
 
-def send_sms(number: str, message: str) -> bool:
-    """Send an SMS, routing to the real AT client or stub based on config."""
+def send_sms(number, message: str) -> bool:
+    """Send an SMS (to a string or list of strings), routing to the real AT client or stub based on config."""
     # Import here to avoid a circular import at module load time
     try:
         from flask import current_app

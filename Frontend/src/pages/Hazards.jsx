@@ -44,7 +44,7 @@ export default function Hazards() {
     useEffect(() => {
          
         loadHazards();
-        const interval = setInterval(loadHazards, 5000);
+        const interval = setInterval(loadHazards, 30000);
         return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page, selectedLocation]);
