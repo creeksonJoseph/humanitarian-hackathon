@@ -1,7 +1,30 @@
 import { Link } from "react-router-dom";
 
-export default function RiderRoster({ riders }) {
+export default function RiderRoster({ riders, isLoading }) {
     const displayRiders = riders.slice(0, 5);
+
+    if (isLoading) {
+        return (
+            <section className="bg-slate-panel rounded-xl overflow-hidden border border-slate-700">
+                <div className="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
+                    <h2 className="oswald text-xl font-semibold tracking-wide flex items-center gap-2">
+                        <span className="material-symbols-outlined text-emerald-500">sports_motorsports</span>
+                        RIDER ROSTER
+                    </h2>
+                </div>
+                <div className="p-6 text-center space-y-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
+                    <p className="text-slate-500 text-sm">Loading riders...</p>
+                </div>
+                <div className="px-6 py-4 border-t border-slate-700 flex justify-center bg-slate-800/30 w-full">
+                    <Link to="/riders" className="text-sm font-medium text-emerald-500 hover:text-emerald-400 uppercase tracking-wide flex items-center gap-1 transition-colors">
+                        View All Riders
+                        <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                    </Link>
+                </div>
+            </section>
+        );
+    }
 
     if (riders.length === 0) {
         return (

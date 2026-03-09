@@ -23,8 +23,10 @@ function Dashboard() {
     const [sosFeed, setSosFeed] = useState([]);
     const [riders, setRiders] = useState([]);
     const [hazards, setHazards] = useState([]);
+    const [isLoadingRiders, setIsLoadingRiders] = useState(true);
 
     const fetchData = useCallback(async () => {
+        setIsLoadingRiders(true);
         try {
             const [statsData, sosData, ridersData, hazardsData] = await Promise.all([
                 fetchStats(selectedLocation).catch(() => null),
@@ -38,8 +40,11 @@ function Dashboard() {
             if (ridersData) setRiders(ridersData.data || []);
             if (hazardsData) setHazards(hazardsData.data || []);
             
+            setIsLoadingRiders(false);
+            
         } catch (error) {
             console.error("Error fetching data:", error);
+            setIsLoadingRiders(false);
         }
     }, [selectedLocation]);
     useEffect(() => {
@@ -65,7 +70,7 @@ function Dashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
                         <SosFeed sos={sosFeed} />
-                        <RiderRoster riders={riders} />
+                        <RiderRoster riders={riders} isLoading={isLoadingRiders} />
                     </div>
                     <aside className="space-y-6">
                         <Hazards hazards={hazards} handleClear={handleClearHazard} />
