@@ -29,14 +29,5 @@ cp config/.env.example .env
 nano .env
 ```
 
-## Importing Config in Code
-
-Update your imports:
-
-```python
-# Old
-from config import Config
-
-# New
-from config.config import Config
+#
 ```
