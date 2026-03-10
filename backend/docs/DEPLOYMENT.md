@@ -175,28 +175,4 @@ python tests/smoke_test.py
 - Check database connection string
 - Verify database file permissions (SQLite)
 
-## What's Still Missing (TODO)
 
-### Critical for Production
-1. **Background Task Scheduler** - Implement cron jobs or Celery
-2. **Rate Limiting** - Prevent USSD/SMS abuse
-3. **Structured Logging** - Use Python logging module
-4. **Error Monitoring** - Integrate Sentry or similar
-5. **Database Backups** - Automated backup strategy
-6. **CORS Configuration** - For frontend dashboard
-7. **Health Check Endpoint** - `/health` route
-8. **API Documentation** - Document REST endpoints
-
-### Nice to Have
-- Load balancing for high traffic
-- Redis caching for rider queries
-- Metrics dashboard (Prometheus/Grafana)
-- SMS delivery confirmation tracking
-- Multi-language USSD support
-
-## Support
-
-For issues or questions:
-- Check logs in `instance/` folder
-- Review Africa's Talking API docs: https://developers.africastalking.com/
-- Test in sandbox before production deployment
