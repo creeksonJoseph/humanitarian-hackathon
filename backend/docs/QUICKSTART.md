@@ -59,11 +59,11 @@ python tests/smoke_test.py
 
 | File | Purpose | Action Required |
 |------|---------|-----------------|
-| `.env` | Your credentials | ✅ Create from .env.example |
+| `.env` | Your credentials | Create from .env.example |
 | `DEPLOYMENT.md` | Full deployment guide | 📖 Read before deploying |
-| `PRODUCTION_CHECKLIST.md` | What's missing | ✅ Review and implement |
-| `config.py` | Configuration management | ✅ Already created |
-| `tests/` | All tests | ✅ Run before demo |
+
+| `config.py` | Configuration management |
+| `tests/` | All tests | Run before demo |
 
 ## ⚡ Common Commands
 
@@ -106,27 +106,7 @@ AFRICAS_TALKING_API_KEY=xxx                   # From AT dashboard
 API_KEY=xxx                     # For protected endpoints
 ```
 
-## 🎯 Hackathon Demo Prep (March 13)
 
-### Morning Checklist
-- [ ] Start Flask: `python app.py`
-- [ ] Start Ngrok: `ngrok http 8000`
-- [ ] Update Africa's Talking webhook with Ngrok URL
-- [ ] Test USSD flow in simulator
-- [ ] Verify SMS sending works
-- [ ] Check database has demo data
-
-### During Demo
-1. Show USSD flow on simulator
-2. Trigger SMS broadcast
-3. Show database updates in real-time
-4. Explain offline-first architecture
-5. Highlight humanitarian impact
-
-### Backup Plan
-- Have 20-second demo video ready
-- Screenshots of working system
-- Database query results prepared
 
 ## 🚨 Troubleshooting
 
@@ -156,9 +136,7 @@ flask db upgrade
 
 ## 📚 Documentation Quick Links
 
-- **Full Deployment:** See `DEPLOYMENT.md`
-- **Production Checklist:** See `PRODUCTION_CHECKLIST.md`
-- **Summary of Changes:** See `PRODUCTION_SUMMARY.md`
+- **Full Deployment:** See `DEPLOYMENT.md` 
 - **Project Overview:** See `README.md`
 
 ## 💡 Pro Tips
@@ -169,27 +147,13 @@ flask db upgrade
 4. **Use .env for secrets** - Never commit credentials
 5. **Test edge cases** - Ghost rider, timeout, invalid input
 
-## 🎓 What's Next
 
-### For Hackathon (By March 13)
-1. ✅ Environment setup (you're here!)
-2. Test USSD flow thoroughly
-3. Prepare demo script
-4. Practice 5-minute pitch
-
-### After Hackathon (Production)
-1. Implement background tasks (see PRODUCTION_CHECKLIST.md)
-2. Add rate limiting
-3. Set up monitoring
-4. Deploy to production server
-5. Load test with real traffic
 
 ## 🆘 Need Help?
 
-1. Check `DEPLOYMENT.md` for detailed instructions
-2. Review `PRODUCTION_CHECKLIST.md` for missing items
-3. Read Flask docs: https://flask.palletsprojects.com/
-4. Africa's Talking docs: https://developers.africastalking.com/
+1. Check `DEPLOYMENT.md` for detailed instructions 
+2. Read Flask docs: https://flask.palletsprojects.com/
+3. Africa's Talking docs: https://developers.africastalking.com/
 
 ---
 
