@@ -18,4 +18,4 @@
 
 **Deploying to production?** → Read [DEPLOYMENT.md](DEPLOYMENT.md)
 
-**What's missing?** → Check [TODO.md](TODO.md)
+
