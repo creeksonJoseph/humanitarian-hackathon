@@ -7,7 +7,7 @@ Traditional ambulances cannot pass, and centralized dispatchers in Nairobi have 
 
 ## 2. The OkoaRoute Solution
 OkoaRoute is an offline-first, decentralized medical dispatch engine built entirely for the basic feature phone (kabambe).
-You dial a code (eg. `*384*99#`), and it automatically finds the nearest safe boda rider to come get you, while making sure they don't get stuck on a flooded road along the way (we use crowd sourced up-to-date data, more on this below).
+You dial a code (e.g. `*384*99#`), and it automatically finds the nearest safe boda rider to come get you, while making sure they don't get stuck on a flooded road along the way.
 
 ## 3. How the Ecosystem Works
 OkoaRoute bridges the gap between a feature phone in the mud and a dispatcher's laptop. It pairs a simple offline menu for the victims with a live web dashboard for the NGOs.
@@ -15,23 +15,37 @@ OkoaRoute bridges the gap between a feature phone in the mud and a dispatcher's 
 ### A. Rescuers Onboarding
 Local riders dial a USSD and register as ready to receive SOS in cases of emergencies.
 
+| Welcome Menu | Rider Portal |
+| :---: | :---: |
+| <img src="Frontend/public/image1.png" width="350"> | <img src="Frontend/public/image2.png" width="350"> |
 *(An illustration of a rider register flow)*
 
-After registration, to prevent data poisoning, an admin will have to approve the riders from the command centre dashboard. Once approved, they can start receiving SOS messages.
+After registration, to prevent data poisoning, an admin must approve the riders from the command center dashboard. Once approved, they can start receiving SOS messages.
 
-*(An illustration of an admin approving a new rider from the command center)*
+<p align="center">
+  <img src="Frontend/public/image3.png" width="800">
+  <br>
+  <i>(An illustration of an admin approving a new rider from the command center)</i>
+</p>
 
 ### B. Crowd Sourcing Data on Affected Areas
-Anyone can dial a USSD to report an affected area or hazard routes. Anyone can also check on affected areas via the USSD to plan effectively on how to address their emergency. Riders also get details of the affected areas when trying a rescue to help them plan on better routes to use to get to the victims.
+Anyone can dial a USSD to report an affected area or hazard routes. Anyone can also check on affected areas via the USSD to plan effectively. Riders also get details of the affected areas when trying a rescue to help them plan better routes.
 
+| Reporting a Hazard | Hazard Alert Check |
+| :---: | :---: |
+| <img src="Frontend/public/image4.png" width="350"> | <img src="Frontend/public/image5.png" width="350"> |
 *(An illustration of a user reporting hazards and another user checking conditions of an area)*
 
-To avoid data poisoning, hazards reported by a single user are considered unverified unless reported by an approved rider. Hazards reported by multiple users become verified automatically. This system ensures no need for a central command to report hazards.
+To avoid data poisoning, hazards reported by a single user are considered unverified unless reported by an approved rider. Hazards reported by multiple users become verified automatically.
 
 ### C. User Calling for SOS Help
-A user can call for SOS help and the nearest riders are alerted. The first rider to reply to the message gets the contact details of the victim and they can call them to know their exact location. The victim also gets the contact details of the rider to be assured that there is someone coming and they can communicate.
+A user can call for SOS help and the nearest riders are alerted. The first rider to reply to the message gets the contact details of the victim. The victim also gets the contact details of the rider for assurance and communication.
 
-*(An illustration of a rider accepting an SOS)*
+<p align="center">
+  <img src="Frontend/public/image6.png" width="350">
+  <br>
+  <i>(An illustration of a rider accepting an SOS)</i>
+</p>
 
 ### D. Auto-Healing State Management
 The Python/Flask backend utilizes automated cron jobs to track rider availability via state changes and force-close stale jobs, ensuring the rescue fleet never gets bogged down by ghost data.
