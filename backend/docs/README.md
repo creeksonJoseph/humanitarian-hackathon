@@ -8,11 +8,7 @@
 
 ### Deployment & Production
 3. **[DEPLOYMENT.md](DEPLOYMENT.md)** - Complete deployment guide
-4. **[PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md)** - Implementation checklist
-5. **[PRODUCTION_SUMMARY.md](PRODUCTION_SUMMARY.md)** - Summary of changes
 
-### Development
-6. **[TODO.md](TODO.md)** - Critical items to implement
 
 ## Quick Navigation
 
