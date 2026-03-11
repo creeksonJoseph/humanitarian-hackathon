@@ -53,9 +53,14 @@ The Python/Flask backend utilizes automated cron jobs to track rider availabilit
 ## 4. Why This Works
 Existing solutions build for perfect conditions. OkoaRoute is built for the mud. By turning the existing, highly-organized Boda Boda network into a hazard-aware ambulance fleet and doing it entirely offline, we bridge the critical "first mile" gap in rural healthcare, drastically reducing response times and saving lives.
 
-## 5. Deployment and Github
-Command center deployed at: https://humanitarian-hackathon.vercel.app/       
-Github link at: https://github.com/creeksonJoseph/humanitarian-hackathon 
-# N/B: 
-log in with username: admin and password: admin to interact with the command center from the web. 
-The ussd system works in africa's talking simulator only and not yet gone to production to work on real phones.
+## 5. Demo, Deployment and Github
+
+**Command center deployed at:** https://humanitarian-hackathon.vercel.app/        
+**Github link at:** https://github.com/creeksonJoseph/humanitarian-hackathon 
+
+View the live demo below: 
+
+[![OkoaRoute - Watch Video](https://cdn.loom.com/sessions/thumbnails/ca53ec2df44f47198a788a4714cc6044-58736c9b026974fa-full-play.gif)](https://www.loom.com/share/ca53ec2df44f47198a788a4714cc6044)
+
+> **N/B:**  **Dashboard Access:** Log in with username: `admin` and password: `admin` to interact with the command center from the web. 
+> * **USSD Environment:** The USSD system currently runs in the Africa's Talking simulator and has not yet been pushed to production for real-world devices.
